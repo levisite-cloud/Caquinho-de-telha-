@@ -1,15 +1,11 @@
 import express from 'express';
 import path from 'path';
-import fs from 'fs';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { createClient } from '@supabase/supabase-js';
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './src/types.js';
-import { firebaseConfig } from './firebaseConfig.js';
+import { supabaseUrl, supabaseAnonKey } from './supabaseConfig.js';
 
-// Inicializar Firebase
-const firebaseApp = initializeApp(firebaseConfig);
-const dbId = firebaseConfig.firestoreDatabaseId;
-const db = dbId ? getFirestore(firebaseApp, dbId) : getFirestore(firebaseApp);
+// Inicializar Supabase
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Porta padrão exigida pela infraestrutura
 const PORT = 3000;
@@ -38,17 +34,17 @@ const defaultPrinterConfig: PrinterConfig = {
   tipoImpressora: 'escpos'
 };
 
-// === ROTAS DA API ===
+// === ROTAS DA API (SUPABASE) ===
 
 // 1. GESTÃO DE PRODUTOS
 
 // Listar produtos
 app.get('/api/produtos', async (req, res) => {
   try {
-    const produtosSnapshot = await getDocs(collection(db, 'produtos'));
-    const produtos = produtosSnapshot.docs.map(doc => doc.data() as Produto);
-    res.json(produtos);
-  } catch (error) {
+    const { data, error } = await supabase.from('produtos').select('*');
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
     console.error('Erro ao listar produtos:', error);
     res.status(500).json({ error: 'Erro ao buscar produtos' });
   }
@@ -75,11 +71,13 @@ app.post('/api/produtos', async (req, res) => {
       estoqueMinimo: estoqueMinimo !== undefined ? Number(estoqueMinimo) : undefined
     };
 
-    await setDoc(doc(db, 'produtos', id), novoProduto);
+    const { error } = await supabase.from('produtos').insert([novoProduto]);
+    if (error) throw error;
+
     res.status(201).json(novoProduto);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar produto:', error);
-    res.status(500).json({ error: 'Erro ao criar produto' });
+    res.status(500).json({ error: 'Erro ao criar produto: ' + error.message });
   }
 });
 
@@ -89,14 +87,13 @@ app.put('/api/produtos/:id', async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const produtoRef = doc(db, 'produtos', id);
-    const produtoSnap = await getDoc(produtoRef);
-
-    if (!produtoSnap.exists()) {
+    // Buscar produto original
+    const { data: pOriginal, error: getError } = await supabase.from('produtos').select('*').eq('id', id).single();
+    
+    if (getError || !pOriginal) {
       return res.status(404).json({ error: 'Produto não encontrado.' });
     }
 
-    const pOriginal = produtoSnap.data() as Produto;
     const produtoAtualizado: Produto = {
       ...pOriginal,
       nome: updateData.nome !== undefined ? updateData.nome : pOriginal.nome,
@@ -108,11 +105,13 @@ app.put('/api/produtos/:id', async (req, res) => {
       estoqueMinimo: updateData.estoqueMinimo !== undefined ? Number(updateData.estoqueMinimo) : pOriginal.estoqueMinimo
     };
 
-    await updateDoc(produtoRef, produtoAtualizado as any);
+    const { error: updateError } = await supabase.from('produtos').update(produtoAtualizado).eq('id', id);
+    if (updateError) throw updateError;
+
     res.json(produtoAtualizado);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao atualizar produto:', error);
-    res.status(500).json({ error: 'Erro ao atualizar produto' });
+    res.status(500).json({ error: 'Erro ao atualizar produto: ' + error.message });
   }
 });
 
@@ -120,18 +119,12 @@ app.put('/api/produtos/:id', async (req, res) => {
 app.delete('/api/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const produtoRef = doc(db, 'produtos', id);
-    const produtoSnap = await getDoc(produtoRef);
-
-    if (!produtoSnap.exists()) {
-      return res.status(404).json({ error: 'Produto não encontrado.' });
-    }
-
-    await deleteDoc(produtoRef);
+    const { error } = await supabase.from('produtos').delete().eq('id', id);
+    if (error) throw error;
     res.json({ message: 'Produto removido com sucesso.' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao deletar produto:', error);
-    res.status(500).json({ error: 'Erro ao deletar produto' });
+    res.status(500).json({ error: 'Erro ao deletar produto: ' + error.message });
   }
 });
 
@@ -141,18 +134,17 @@ app.delete('/api/produtos/:id', async (req, res) => {
 app.get('/api/comandas', async (req, res) => {
   try {
     const ativasOnly = req.query.ativas === 'true';
-    let comandasQuery;
+    let query = supabase.from('comandas').select('*');
     
     if (ativasOnly) {
-      comandasQuery = query(collection(db, 'comandas'), where('ativa', '==', true));
-    } else {
-      comandasQuery = collection(db, 'comandas');
+      query = query.eq('ativa', true);
     }
     
-    const comandasSnapshot = await getDocs(comandasQuery);
-    const comandas = comandasSnapshot.docs.map(doc => doc.data() as Comanda);
-    res.json(comandas);
-  } catch (error) {
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    res.json(data);
+  } catch (error: any) {
     console.error('Erro ao listar comandas:', error);
     res.status(500).json({ error: 'Erro ao listar comandas' });
   }
@@ -167,11 +159,16 @@ app.post('/api/comandas', async (req, res) => {
       return res.status(400).json({ error: 'O identificador da comanda/mesa é obrigatório.' });
     }
 
-    const comandasSnapshot = await getDocs(query(collection(db, 'comandas'), where('ativa', '==', true)));
-    const comandas = comandasSnapshot.docs.map(doc => doc.data() as Comanda);
-    
-    const existente = comandas.find(c => c.identificador.toLowerCase() === identificador.toLowerCase());
-    if (existente) {
+    // Verificar se já existe comanda ativa com este nome
+    const { data: existentes, error: checkError } = await supabase
+      .from('comandas')
+      .select('*')
+      .eq('ativa', true)
+      .ilike('identificador', identificador.trim());
+      
+    if (checkError) throw checkError;
+
+    if (existentes && existentes.length > 0) {
       return res.status(400).json({ error: `Já existe uma comanda ativa para "${identificador}".` });
     }
 
@@ -184,11 +181,13 @@ app.post('/api/comandas', async (req, res) => {
       dataAbertura: new Date().toISOString()
     };
 
-    await setDoc(doc(db, 'comandas', id), novaComanda);
+    const { error } = await supabase.from('comandas').insert([novaComanda]);
+    if (error) throw error;
+
     res.status(201).json(novaComanda);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao abrir comanda:', error);
-    res.status(500).json({ error: 'Erro ao abrir comanda' });
+    res.status(500).json({ error: 'Erro ao abrir comanda: ' + error.message });
   }
 });
 
@@ -202,19 +201,18 @@ app.put('/api/comandas/:id/itens', async (req, res) => {
       return res.status(400).json({ error: 'Formato de itens inválido.' });
     }
 
-    const comandaRef = doc(db, 'comandas', id);
-    const comandaSnap = await getDoc(comandaRef);
+    const { data: comanda, error: getError } = await supabase.from('comandas').select('*').eq('id', id).single();
 
-    if (!comandaSnap.exists() || !comandaSnap.data().ativa) {
+    if (getError || !comanda || !comanda.ativa) {
       return res.status(404).json({ error: 'Comanda ativa não encontrada.' });
     }
 
-    const comanda = comandaSnap.data() as Comanda;
-    comanda.itens = itens;
+    const { error: updateError } = await supabase.from('comandas').update({ itens }).eq('id', id);
+    if (updateError) throw updateError;
 
-    await updateDoc(comandaRef, { itens });
+    comanda.itens = itens;
     res.json(comanda);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao atualizar itens da comanda:', error);
     res.status(500).json({ error: 'Erro ao atualizar itens da comanda' });
   }
@@ -224,16 +222,10 @@ app.put('/api/comandas/:id/itens', async (req, res) => {
 app.delete('/api/comandas/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const comandaRef = doc(db, 'comandas', id);
-    const comandaSnap = await getDoc(comandaRef);
-
-    if (!comandaSnap.exists()) {
-      return res.status(404).json({ error: 'Comanda não encontrada.' });
-    }
-
-    await deleteDoc(comandaRef);
+    const { error } = await supabase.from('comandas').delete().eq('id', id);
+    if (error) throw error;
     res.json({ message: 'Comanda cancelada com sucesso.' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao cancelar comanda:', error);
     res.status(500).json({ error: 'Erro ao cancelar comanda' });
   }
@@ -254,14 +246,12 @@ app.post('/api/vendas', async (req, res) => {
     let comandaIdentificador: string | undefined;
 
     if (comandaId) {
-      const comandaRef = doc(db, 'comandas', comandaId);
-      const comandaSnap = await getDoc(comandaRef);
+      const { data: comanda, error: getError } = await supabase.from('comandas').select('*').eq('id', comandaId).single();
 
-      if (!comandaSnap.exists() || !comandaSnap.data().ativa) {
+      if (getError || !comanda || !comanda.ativa) {
         return res.status(404).json({ error: 'Comanda ativa não encontrada.' });
       }
       
-      const comanda = comandaSnap.data() as Comanda;
       itensVenda = comanda.itens;
       comandaIdentificador = comanda.identificador;
 
@@ -269,7 +259,7 @@ app.post('/api/vendas', async (req, res) => {
         return res.status(400).json({ error: 'Não é possível fechar uma comanda vazia.' });
       }
 
-      await updateDoc(comandaRef, { ativa: false });
+      await supabase.from('comandas').update({ ativa: false }).eq('id', comandaId);
     } else {
       if (!itens || !Array.isArray(itens) || itens.length === 0) {
         return res.status(400).json({ error: 'O carrinho está vazio.' });
@@ -281,14 +271,10 @@ app.post('/api/vendas', async (req, res) => {
 
     // Baixa no estoque
     for (const item of itensVenda) {
-      const prodRef = doc(db, 'produtos', item.produtoId);
-      const prodSnap = await getDoc(prodRef);
-      if (prodSnap.exists()) {
-        const prod = prodSnap.data() as Produto;
-        if (prod.controlarEstoque) {
-          const novoEstoque = Math.max(0, prod.estoque - item.quantidade);
-          await updateDoc(prodRef, { estoque: novoEstoque });
-        }
+      const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
+      if (prod && prod.controlarEstoque) {
+        const novoEstoque = Math.max(0, prod.estoque - item.quantidade);
+        await supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId);
       }
     }
 
@@ -302,11 +288,13 @@ app.post('/api/vendas', async (req, res) => {
       formaPagamento: formaPagamento as FormaPagamento
     };
 
-    await setDoc(doc(db, 'vendas', novaVenda.id), novaVenda);
+    const { error: insertError } = await supabase.from('vendas').insert([novaVenda]);
+    if (insertError) throw insertError;
+
     res.status(201).json(novaVenda);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao registrar venda:', error);
-    res.status(500).json({ error: 'Erro ao registrar venda' });
+    res.status(500).json({ error: 'Erro ao registrar venda: ' + error.message });
   }
 });
 
@@ -314,10 +302,16 @@ app.post('/api/vendas', async (req, res) => {
 app.get('/api/vendas/relatorio', async (req, res) => {
   try {
     const hojeStr = new Date().toISOString().split('T')[0];
-    const vendasSnapshot = await getDocs(collection(db, 'vendas'));
-    const vendas = vendasSnapshot.docs.map(doc => doc.data() as Venda);
     
-    const vendasHoje = vendas.filter(v => v.data.startsWith(hojeStr));
+    // Pegar vendas que a data começa com hoje
+    const { data: vendas, error } = await supabase
+      .from('vendas')
+      .select('*')
+      .like('data', `${hojeStr}%`);
+      
+    if (error) throw error;
+    
+    const vendasHoje = vendas || [];
     const totalGeral = vendasHoje.reduce((acc, v) => acc + v.total, 0);
 
     const porForma: Record<string, number> = {
@@ -335,7 +329,7 @@ app.get('/api/vendas/relatorio', async (req, res) => {
 
     const produtosVendidos: { [nome: string]: number } = {};
     vendasHoje.forEach(v => {
-      v.itens.forEach(item => {
+      v.itens.forEach((item: any) => {
         produtosVendidos[item.nome] = (produtosVendidos[item.nome] || 0) + item.quantidade;
       });
     });
@@ -358,7 +352,7 @@ app.get('/api/vendas/relatorio', async (req, res) => {
       maisVendidos,
       vendasDetalhadas: vendasHoje
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao gerar relatório:', error);
     res.status(500).json({ error: 'Erro ao gerar relatório' });
   }
@@ -366,18 +360,12 @@ app.get('/api/vendas/relatorio', async (req, res) => {
 
 app.post('/api/vendas/reiniciar', async (req, res) => {
   try {
-    const vendasSnapshot = await getDocs(collection(db, 'vendas'));
-    for (const d of vendasSnapshot.docs) {
-      await deleteDoc(d.ref);
-    }
-    
-    const comandasSnapshot = await getDocs(collection(db, 'comandas'));
-    for (const d of comandasSnapshot.docs) {
-      await deleteDoc(d.ref);
-    }
+    // Delete all from vendas and comandas (demonstração)
+    await supabase.from('vendas').delete().neq('id', '0');
+    await supabase.from('comandas').delete().neq('id', '0');
     
     res.json({ message: 'Vendas e comandas limpas (demonstração).' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao limpar base:', error);
     res.status(500).json({ error: 'Erro ao limpar base' });
   }
@@ -386,9 +374,9 @@ app.post('/api/vendas/reiniciar', async (req, res) => {
 // 5. CADASTRO DE EMPRESA
 app.get('/api/empresa', async (req, res) => {
   try {
-    const docSnap = await getDoc(doc(db, 'config', 'empresa'));
-    if (docSnap.exists()) {
-      res.json(docSnap.data());
+    const { data: configSnap } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
+    if (configSnap && configSnap.empresa) {
+      res.json(configSnap.empresa);
     } else {
       res.json(defaultEmpresa);
     }
@@ -414,7 +402,9 @@ app.put('/api/empresa', async (req, res) => {
       logo: logo || ''
     };
 
-    await setDoc(doc(db, 'config', 'empresa'), dadosEmpresa);
+    const { error } = await supabase.from('config').upsert({ id: 'empresa', empresa: dadosEmpresa });
+    if (error) throw error;
+
     res.json(dadosEmpresa);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao atualizar empresa' });
@@ -424,9 +414,9 @@ app.put('/api/empresa', async (req, res) => {
 // 6. IMPRESSORAS
 app.get('/api/printer-config', async (req, res) => {
   try {
-    const docSnap = await getDoc(doc(db, 'config', 'printer'));
-    if (docSnap.exists()) {
-      res.json(docSnap.data());
+    const { data: configSnap } = await supabase.from('config').select('printer').eq('id', 'printer').single();
+    if (configSnap && configSnap.printer) {
+      res.json(configSnap.printer);
     } else {
       res.json(defaultPrinterConfig);
     }
@@ -450,7 +440,9 @@ app.put('/api/printer-config', async (req, res) => {
       tipoImpressora: tipoImpressora || 'escpos'
     };
 
-    await setDoc(doc(db, 'config', 'printer'), printerConfig);
+    const { error } = await supabase.from('config').upsert({ id: 'printer', printer: printerConfig });
+    if (error) throw error;
+    
     res.json(printerConfig);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao atualizar impressora' });
@@ -459,8 +451,8 @@ app.put('/api/printer-config', async (req, res) => {
 
 app.post('/api/imprimir', async (req, res) => {
   try {
-    const docSnap = await getDoc(doc(db, 'config', 'printer'));
-    const config = docSnap.exists() ? docSnap.data() as PrinterConfig : defaultPrinterConfig;
+    const { data: configSnap } = await supabase.from('config').select('printer').eq('id', 'printer').single();
+    const config = (configSnap && configSnap.printer) ? configSnap.printer as PrinterConfig : defaultPrinterConfig;
     
     const { tipo, identificador, itens, observacao, data, textoFormatado } = req.body;
     const ipDestino = tipo === 'cozinha' ? config.cozinhaIp : config.caixaIp;
@@ -539,14 +531,14 @@ app.post('/api/login', async (req, res) => {
     const { password } = req.body;
     
     // Buscar a senha configurada no banco (config/auth)
-    const authSnap = await getDoc(doc(db, 'config', 'auth'));
+    const { data: authSnap } = await supabase.from('config').select('password').eq('id', 'auth').single();
     let correctPassword = 'admin'; // Senha padrão se não configurada
 
-    if (authSnap.exists() && authSnap.data().password) {
-      correctPassword = authSnap.data().password;
+    if (authSnap && authSnap.password) {
+      correctPassword = authSnap.password;
     } else {
       // Se não existir, cria o documento com a senha padrão para uso futuro
-      await setDoc(doc(db, 'config', 'auth'), { password: correctPassword });
+      await supabase.from('config').upsert({ id: 'auth', password: correctPassword });
     }
 
     if (password === correctPassword) {
@@ -557,7 +549,7 @@ app.post('/api/login', async (req, res) => {
     }
   } catch (error: any) {
     console.error('Erro no login:', error);
-    res.status(500).json({ error: 'Erro no Firebase: ' + (error.message || String(error)) });
+    res.status(500).json({ error: 'Erro no Supabase: ' + (error.message || String(error)) });
   }
 });
 
@@ -580,7 +572,7 @@ async function startServer() {
 
   if (process.env.VERCEL !== '1') {
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`[PDV Server] Rodando com Firebase Firestore na porta ${PORT}`);
+      console.log(`[PDV Server] Rodando com Supabase na porta ${PORT}`);
     });
   }
 }
