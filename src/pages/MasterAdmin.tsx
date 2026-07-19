@@ -16,17 +16,24 @@ export function MasterAdmin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const [licencas, setLicencas] = useState<Licenca[]>([]);
+  const [sistemaStatus, setSistemaStatus] = useState<{validade: string | null, expirada: boolean, cnpj: string} | null>(null);
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [dias, setDias] = useState('30');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const fetchLicencas = async (pwd: string) => {
+  const fetchLicencasEStatus = async (pwd: string) => {
     try {
-      const res = await fetch(`/api/master/licencas?masterPassword=${encodeURIComponent(pwd)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLicencas(data);
+      const [resLicencas, resStatus] = await Promise.all([
+        fetch(`/api/master/licencas?masterPassword=${encodeURIComponent(pwd)}`),
+        fetch(`/api/master/status-sistema?masterPassword=${encodeURIComponent(pwd)}`)
+      ]);
+
+      if (resLicencas.ok && resStatus.ok) {
+        const dataLic = await resLicencas.json();
+        const dataStatus = await resStatus.json();
+        setLicencas(dataLic);
+        setSistemaStatus(dataStatus);
         setIsAuthenticated(true);
       } else {
         setError('Senha Master incorreta.');
@@ -39,7 +46,7 @@ export function MasterAdmin() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    fetchLicencas(password);
+    fetchLicencasEStatus(password);
   };
 
   const gerarLicenca = async (e: React.FormEvent) => {
@@ -60,10 +67,62 @@ export function MasterAdmin() {
 
       if (res.ok) {
         setCpfCnpj('');
-        fetchLicencas(password);
+        fetchLicencasEStatus(password);
       } else {
         const err = await res.json();
         alert(err.error || 'Erro ao gerar.');
+      }
+    } catch (err) {
+      alert('Erro de conexão.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const forcarDesbloqueio = async () => {
+    if (!window.confirm(`Tem certeza que deseja forçar o desbloqueio direto adicionando ${dias} dias ao sistema?`)) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch('/api/master/desbloqueio-direto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          masterPassword: password,
+          dias: Number(dias)
+        })
+      });
+
+      if (res.ok) {
+        alert('Sistema desbloqueado com sucesso!');
+        fetchLicencasEStatus(password);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Erro ao desbloquear.');
+      }
+    } catch (err) {
+      alert('Erro de conexão.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const forcarBloqueio = async () => {
+    if (!window.confirm('Tem certeza que deseja BLOQUEAR o sistema? O cliente perderá acesso na hora.')) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch('/api/master/bloquear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ masterPassword: password })
+      });
+
+      if (res.ok) {
+        alert('Sistema bloqueado com sucesso!');
+        fetchLicencasEStatus(password);
+      } else {
+        alert('Erro ao bloquear.');
       }
     } catch (err) {
       alert('Erro de conexão.');
@@ -118,6 +177,47 @@ export function MasterAdmin() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          
+          <div className="md:col-span-3">
+            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-white mb-1">Status do Sistema Cliente</h2>
+                <p className="text-sm text-gray-400">CNPJ Cadastrado: <strong className="text-gray-200">{sistemaStatus?.cnpj}</strong></p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Validade Atual:</span>
+                  {sistemaStatus?.validade ? (
+                    <strong className="text-gray-200">{new Date(sistemaStatus.validade).toLocaleDateString('pt-BR')}</strong>
+                  ) : (
+                    <strong className="text-gray-500">Nunca Ativado</strong>
+                  )}
+                  {sistemaStatus?.expirada ? (
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">BLOQUEADO</span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">ATIVO</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={forcarBloqueio}
+                  disabled={loading || sistemaStatus?.expirada}
+                  className="w-full sm:w-auto px-4 py-2 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 text-red-400 hover:text-red-300 font-medium rounded transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Shield size={18} /> Forçar Bloqueio
+                </button>
+                <button
+                  type="button"
+                  onClick={forcarDesbloqueio}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition-colors flex items-center gap-2"
+                >
+                  <KeyRound size={18} /> Liberar +{dias} dias
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="md:col-span-1">
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <h2 className="text-lg font-bold text-white mb-4">Nova Licença</h2>

@@ -106,6 +106,18 @@ export function AtivacaoLicenca({ onSuccess, validadeAtual }: AtivacaoLicencaPro
             >
               {loading ? 'Validando...' : 'Ativar Sistema'}
             </button>
+
+            <div className="pt-4 mt-4 border-t border-gray-700 text-center">
+              <p className="text-gray-400 text-sm mb-3">Não possui um código?</p>
+              <a
+                href={`https://wa.me/5511999999999?text=Olá!%20Minha%20licença%20do%20PDV%20expirou.%20Gostaria%20de%20renovar.`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-lg text-white font-medium bg-green-600 hover:bg-green-700 transition-colors"
+              >
+                Solicitar via WhatsApp
+              </a>
+            </div>
           </form>
         )}
       </div>

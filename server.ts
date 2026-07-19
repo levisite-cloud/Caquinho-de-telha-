@@ -611,6 +611,36 @@ app.post('/api/master/licencas', async (req, res) => {
   }
 });
 
+// MASTER ADMIN: Status do Sistema Local
+app.get('/api/master/status-sistema', async (req, res) => {
+  try {
+    const { masterPassword } = req.query;
+    if (masterPassword !== 'Master@2026') {
+      return res.status(401).json({ error: 'Acesso Master negado.' });
+    }
+    
+    const { data: configSnap } = await supabase.from('config').select('licenca_validade, empresa').eq('id', 'licenca').single();
+    const { data: empresaSnap } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
+    
+    let validade = null;
+    let expirada = true;
+    let cnpj = 'Não cadastrado';
+
+    if (configSnap && configSnap.licenca_validade) {
+      validade = configSnap.licenca_validade;
+      expirada = new Date(validade) < new Date();
+    }
+
+    if (empresaSnap && empresaSnap.empresa && empresaSnap.empresa.cnpj) {
+      cnpj = empresaSnap.empresa.cnpj;
+    }
+
+    res.json({ validade, expirada, cnpj });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Erro ao buscar status' });
+  }
+});
+
 // MASTER ADMIN: Listar licenças
 app.get('/api/master/licencas', async (req, res) => {
   try {
@@ -626,6 +656,56 @@ app.get('/api/master/licencas', async (req, res) => {
   } catch (error: any) {
     console.error('Erro ao listar licenças:', error);
     res.status(500).json({ error: 'Erro ao listar licenças' });
+  }
+});
+
+// MASTER ADMIN: Desbloqueio Direto (Ignora código de licença)
+app.post('/api/master/desbloqueio-direto', async (req, res) => {
+  try {
+    const { masterPassword, dias } = req.body;
+    if (masterPassword !== 'Master@2026') {
+      return res.status(401).json({ error: 'Acesso Master negado.' });
+    }
+
+    const diasAdicionais = Number(dias) || 30;
+    
+    let dataAtual = new Date();
+    const { data: configSnap } = await supabase.from('config').select('licenca_validade').eq('id', 'licenca').single();
+    if (configSnap && configSnap.licenca_validade) {
+      const validadeAtual = new Date(configSnap.licenca_validade);
+      if (validadeAtual > dataAtual) {
+        dataAtual = validadeAtual; // Soma ao tempo futuro existente
+      }
+    }
+    
+    dataAtual.setDate(dataAtual.getDate() + diasAdicionais);
+    await supabase.from('config').upsert({ id: 'licenca', licenca_validade: dataAtual.toISOString() });
+
+    res.json({ success: true, nova_validade: dataAtual.toISOString() });
+  } catch (error: any) {
+    console.error('Erro no desbloqueio direto:', error);
+    res.status(500).json({ error: 'Erro ao desbloquear' });
+  }
+});
+
+// MASTER ADMIN: Bloqueio Direto (Zera a licença do sistema)
+app.post('/api/master/bloquear', async (req, res) => {
+  try {
+    const { masterPassword } = req.body;
+    if (masterPassword !== 'Master@2026') {
+      return res.status(401).json({ error: 'Acesso Master negado.' });
+    }
+    
+    // Set expiration to yesterday
+    let dataAtual = new Date();
+    dataAtual.setDate(dataAtual.getDate() - 1);
+    
+    await supabase.from('config').upsert({ id: 'licenca', licenca_validade: dataAtual.toISOString() });
+
+    res.json({ success: true, bloqueado: true });
+  } catch (error: any) {
+    console.error('Erro no bloqueio direto:', error);
+    res.status(500).json({ error: 'Erro ao bloquear' });
   }
 });
 
