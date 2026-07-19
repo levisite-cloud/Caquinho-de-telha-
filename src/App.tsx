@@ -26,7 +26,8 @@ import {
   Printer,
   Store,
   Upload,
-  Cloud
+  Cloud,
+  LogOut
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
@@ -958,6 +959,18 @@ export default function App() {
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Resetar Demo
+            </button>
+
+            <button
+              onClick={() => {
+                setIsAuthenticated(false);
+                localStorage.removeItem('pdv_auth');
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer"
+              title="Sair do sistema"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sair
             </button>
           </div>
         </div>
