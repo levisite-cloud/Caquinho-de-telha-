@@ -27,7 +27,8 @@ import {
   Store,
   Upload,
   Cloud,
-  LogOut
+  LogOut,
+  KeyRound
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
@@ -46,6 +47,7 @@ export default function App() {
   const [isCheckingLicense, setIsCheckingLicense] = useState(true);
   const [isLicenseExpired, setIsLicenseExpired] = useState(false);
   const [licencaValidade, setLicencaValidade] = useState<string | null>(null);
+  const [showRenovarModal, setShowRenovarModal] = useState(false);
 
   useEffect(() => {
     const checkLicense = async () => {
@@ -952,6 +954,15 @@ export default function App() {
             </span>
 
             <button
+              onClick={() => setShowRenovarModal(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-zinc-950 border border-emerald-500/20 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer"
+              title="Inserir novo código de licença"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              Renovar Licença
+            </button>
+
+            <button
               onClick={reiniciarDemonstracao}
               className="flex items-center gap-1.5 text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-zinc-950 border border-rose-500/20 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer"
               id="btn-demo-reset"
@@ -1092,6 +1103,27 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Renovação Manual */}
+      {showRenovarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md">
+            <button
+              onClick={() => setShowRenovarModal(false)}
+              className="absolute -top-12 right-0 text-gray-400 hover:text-white"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <AtivacaoLicenca
+              validadeAtual={licencaValidade}
+              onSuccess={() => {
+                setShowRenovarModal(false);
+                window.location.reload();
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ÁREA DE CONTEÚDO PRINCIPAL */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col justify-stretch" id="main-content-wrapper">
