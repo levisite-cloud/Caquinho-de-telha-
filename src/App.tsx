@@ -1109,7 +1109,7 @@ export default function App() {
               id="tab-impressoras"
             >
               <Printer className="w-4 h-4 text-amber-500" />
-              Configurações de Impressão
+              Impressora
             </button>
           </nav>
 
