@@ -535,6 +535,34 @@ app.post('/api/imprimir', async (req, res) => {
   }
 });
 
+// 7. AUTENTICAÇÃO / LOGIN
+app.post('/api/login', async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    // Buscar a senha configurada no banco (config/auth)
+    const authSnap = await getDoc(doc(db, 'config', 'auth'));
+    let correctPassword = 'admin'; // Senha padrão se não configurada
+
+    if (authSnap.exists() && authSnap.data().password) {
+      correctPassword = authSnap.data().password;
+    } else {
+      // Se não existir, cria o documento com a senha padrão para uso futuro
+      await setDoc(doc(db, 'config', 'auth'), { password: correctPassword });
+    }
+
+    if (password === correctPassword) {
+      // Para fins de simplicidade neste PDV, retornamos apenas um token estático / sucesso
+      res.json({ success: true, token: 'pdv_authenticated_token' });
+    } else {
+      res.status(401).json({ success: false, error: 'Senha incorreta.' });
+    }
+  } catch (error) {
+    console.error('Erro no login:', error);
+    res.status(500).json({ error: 'Erro no servidor durante o login.' });
+  }
+});
+
 // Serve static files / Vite middleware & listen
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

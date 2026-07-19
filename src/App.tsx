@@ -31,6 +31,41 @@ import {
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './types';
 
 export default function App() {
+  // Autenticação
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('pdv_auth') === 'true';
+  });
+  const [loginPassword, setLoginPassword] = useState<string>('');
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string>('');
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: loginPassword })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsAuthenticated(true);
+        localStorage.setItem('pdv_auth', 'true');
+      } else {
+        setLoginError(data.error || 'Senha incorreta');
+      }
+    } catch (err) {
+      setLoginError('Erro de conexão ao servidor.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   // Controle de Abas
   const [activeTab, setActiveTab] = useState<'pdv' | 'comandas' | 'produtos' | 'relatorios' | 'empresa' | 'impressoras'>('pdv');
 
@@ -751,6 +786,77 @@ export default function App() {
     const correspondeBusca = p.nome.toLowerCase().includes(buscaProduto.toLowerCase());
     return correspondeCategoria && correspondeBusca;
   });
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0B] flex flex-col items-center justify-center p-4 selection:bg-amber-500/30 text-zinc-100 font-sans">
+        <div className="w-full max-w-md">
+          {/* Logo / Header */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-amber-300 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 mb-4">
+              <Store className="text-zinc-950 w-8 h-8" />
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+              {empresa.nome || 'Sabor Gourmet'} PDV
+            </h1>
+            <p className="text-zinc-500 text-sm mt-1">Acesso Restrito ao Caixa</p>
+          </div>
+
+          {/* Form Card */}
+          <div className="bg-[#121214] border border-zinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
+            
+            <form onSubmit={handleLogin} className="flex flex-col gap-5">
+              <div>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">
+                  Senha de Acesso
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Digite a senha do caixa"
+                    className="w-full bg-[#1E1E22] border border-zinc-700/50 rounded-xl px-4 py-3.5 text-zinc-100 font-medium placeholder-zinc-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 transition-all"
+                    autoFocus
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500">
+                    <CheckCircle className={`w-5 h-5 transition-colors ${loginPassword.length > 0 ? 'text-amber-500' : 'text-zinc-600'}`} />
+                  </div>
+                </div>
+              </div>
+
+              {loginError && (
+                <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 flex items-start gap-2 text-rose-500 text-sm">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <p className="font-medium mt-0.5">{loginError}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoggingIn || !loginPassword}
+                className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-amber-500/50 text-zinc-950 font-bold py-3.5 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-center gap-2 group mt-2 cursor-pointer"
+              >
+                {isLoggingIn ? (
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    Entrar no Sistema
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+          
+          <p className="text-center text-xs text-zinc-600 mt-8 font-medium">
+            Sistema PDV Seguro &copy; {new Date().getFullYear()}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 flex flex-col font-sans" id="pdv-app-container">
