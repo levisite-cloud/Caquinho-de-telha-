@@ -202,17 +202,17 @@ export function MasterAdmin() {
                   type="button"
                   onClick={forcarBloqueio}
                   disabled={loading || sistemaStatus?.expirada}
-                  className="w-full sm:w-auto px-4 py-2 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 text-red-400 hover:text-red-300 font-medium rounded transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  <Shield size={18} /> Forçar Bloqueio
+                  <Shield size={18} /> Bloquear Sistema
                 </button>
                 <button
                   type="button"
                   onClick={forcarDesbloqueio}
                   disabled={loading}
-                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition-colors flex items-center gap-2"
+                  className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded transition-colors flex items-center gap-2"
                 >
-                  <KeyRound size={18} /> Liberar +{dias} dias
+                  <KeyRound size={18} /> Ativar Sistema (+{dias} dias)
                 </button>
               </div>
             </div>
