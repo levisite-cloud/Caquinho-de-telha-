@@ -28,6 +28,8 @@ import {
   Upload,
   Cloud
 } from 'lucide-react';
+import { MasterAdmin } from './pages/MasterAdmin';
+import { AtivacaoLicenca } from './components/AtivacaoLicenca';
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './types';
 
 export default function App() {
@@ -38,6 +40,31 @@ export default function App() {
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string>('');
+
+  // Licenciamento
+  const [isCheckingLicense, setIsCheckingLicense] = useState(true);
+  const [isLicenseExpired, setIsLicenseExpired] = useState(false);
+  const [licencaValidade, setLicencaValidade] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkLicense = async () => {
+      try {
+        const res = await fetch('/api/licenca/status');
+        const data = await res.json();
+        if (data.expirada) {
+          setIsLicenseExpired(true);
+          setLicencaValidade(data.validade);
+          setIsAuthenticated(false);
+          localStorage.removeItem('pdv_auth');
+        }
+      } catch (err) {
+        console.error('Erro ao verificar licença:', err);
+      } finally {
+        setIsCheckingLicense(false);
+      }
+    };
+    checkLicense();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +84,11 @@ export default function App() {
         setIsAuthenticated(true);
         localStorage.setItem('pdv_auth', 'true');
       } else {
-        setLoginError(data.error || 'Senha incorreta');
+        if (data.error === 'LICENCA_EXPIRADA') {
+          setIsLicenseExpired(true);
+        } else {
+          setLoginError(data.error || 'Senha incorreta');
+        }
       }
     } catch (err: any) {
       setLoginError('Erro de conexão: ' + (err.message || String(err)));
@@ -786,6 +817,34 @@ export default function App() {
     const correspondeBusca = p.nome.toLowerCase().includes(buscaProduto.toLowerCase());
     return correspondeCategoria && correspondeBusca;
   });
+
+  // ==========================================
+  // RENDERIZAÇÃO
+  // ==========================================
+
+  if (window.location.pathname === '/master-admin') {
+    return <MasterAdmin />;
+  }
+
+  if (isCheckingLicense) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-amber-500">
+        <RefreshCw className="animate-spin w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (isLicenseExpired) {
+    return (
+      <AtivacaoLicenca
+        validadeAtual={licencaValidade}
+        onSuccess={() => {
+          setIsLicenseExpired(false);
+          window.location.reload();
+        }}
+      />
+    );
+  }
 
   if (!isAuthenticated) {
     return (

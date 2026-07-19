@@ -541,6 +541,23 @@ app.post('/api/login', async (req, res) => {
       await supabase.from('config').upsert({ id: 'auth', password: correctPassword });
     }
 
+    // CHECAR LICENÇA DO SISTEMA ANTES DO LOGIN
+    const { data: licencaSnap } = await supabase.from('config').select('licenca_validade').eq('id', 'licenca').single();
+    if (licencaSnap && licencaSnap.licenca_validade) {
+      const validade = new Date(licencaSnap.licenca_validade);
+      if (validade < new Date()) {
+        return res.status(403).json({ success: false, error: 'LICENCA_EXPIRADA', message: 'Sua licença expirou. Entre em contato com o suporte ou insira uma nova licença.' });
+      }
+    } else {
+      // Se não existir, consideramos expirada (ou podemos considerar período de teste de 7 dias, mas vamos bloquear)
+      // Para não travar sistemas antigos, vamos liberar por padrão se não tiver nada ainda,
+      // mas na prática, o dono deveria configurar isso. 
+      // Para garantir que o usuário não perca acesso instantâneo agora, criaremos uma licença provisória de 3 dias se não existir.
+      const tresDias = new Date();
+      tresDias.setDate(tresDias.getDate() + 3);
+      await supabase.from('config').upsert({ id: 'licenca', licenca_validade: tresDias.toISOString() });
+    }
+
     if (password === correctPassword) {
       // Para fins de simplicidade neste PDV, retornamos apenas um token estático / sucesso
       res.json({ success: true, token: 'pdv_authenticated_token' });
@@ -550,6 +567,128 @@ app.post('/api/login', async (req, res) => {
   } catch (error: any) {
     console.error('Erro no login:', error);
     res.status(500).json({ error: 'Erro no Supabase: ' + (error.message || String(error)) });
+  }
+});
+
+// 8. LICENCIAMENTO (SaaS)
+// MASTER ADMIN: Gerar nova licença
+app.post('/api/master/licencas', async (req, res) => {
+  try {
+    const { masterPassword, cpf_cnpj, validade_dias } = req.body;
+    
+    // Hardcoded master password para o desenvolvedor
+    if (masterPassword !== 'Master@2026') {
+      return res.status(401).json({ error: 'Acesso Master negado.' });
+    }
+
+    if (!cpf_cnpj) {
+      return res.status(400).json({ error: 'CPF ou CNPJ é obrigatório.' });
+    }
+
+    const dias = validade_dias ? Number(validade_dias) : 30;
+    
+    // Gerar código único: LIC-XXXX-XXXX
+    const randPart1 = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const randPart2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const codigo = `LIC-${randPart1}-${randPart2}`;
+
+    const novaLicenca = {
+      id: Math.random().toString(36).substring(2, 9),
+      codigo,
+      cpf_cnpj,
+      data_geracao: new Date().toISOString(),
+      validade_dias: dias,
+      usada: false
+    };
+
+    const { error } = await supabase.from('licencas').insert([novaLicenca]);
+    if (error) throw error;
+
+    res.json(novaLicenca);
+  } catch (error: any) {
+    console.error('Erro ao gerar licença:', error);
+    res.status(500).json({ error: 'Erro ao gerar licença' });
+  }
+});
+
+// MASTER ADMIN: Listar licenças
+app.get('/api/master/licencas', async (req, res) => {
+  try {
+    const { masterPassword } = req.query;
+    if (masterPassword !== 'Master@2026') {
+      return res.status(401).json({ error: 'Acesso Master negado.' });
+    }
+    
+    const { data, error } = await supabase.from('licencas').select('*').order('data_geracao', { ascending: false });
+    if (error) throw error;
+    
+    res.json(data);
+  } catch (error: any) {
+    console.error('Erro ao listar licenças:', error);
+    res.status(500).json({ error: 'Erro ao listar licenças' });
+  }
+});
+
+// CLIENTE: Ativar licença no PDV
+app.post('/api/licenca/ativar', async (req, res) => {
+  try {
+    const { codigo } = req.body;
+
+    if (!codigo) {
+      return res.status(400).json({ error: 'O código da licença é obrigatório.' });
+    }
+
+    // Buscar a licença no banco central
+    const { data: licenca, error: getError } = await supabase.from('licencas').select('*').eq('codigo', codigo).single();
+
+    if (getError || !licenca) {
+      return res.status(404).json({ error: 'Licença inválida ou não encontrada.' });
+    }
+
+    if (licenca.usada) {
+      return res.status(400).json({ error: 'Esta licença já foi utilizada.' });
+    }
+
+    // Calcular nova data de validade
+    let dataAtual = new Date();
+    // Se o sistema já tinha uma validade no futuro, adiciona os dias nela. Se não, adiciona a partir de hoje.
+    const { data: configSnap } = await supabase.from('config').select('licenca_validade').eq('id', 'licenca').single();
+    
+    if (configSnap && configSnap.licenca_validade) {
+      const validadeAtual = new Date(configSnap.licenca_validade);
+      if (validadeAtual > dataAtual) {
+        dataAtual = validadeAtual; // Soma dias ao que ele já tem
+      }
+    }
+    
+    dataAtual.setDate(dataAtual.getDate() + Number(licenca.validade_dias));
+
+    // Atualiza o config local
+    await supabase.from('config').upsert({ id: 'licenca', licenca_validade: dataAtual.toISOString() });
+
+    // Marca a licença como usada
+    await supabase.from('licencas').update({ usada: true, usada_em: new Date().toISOString() }).eq('codigo', codigo);
+
+    res.json({ success: true, nova_validade: dataAtual.toISOString(), mensagem: 'Licença ativada com sucesso!' });
+  } catch (error: any) {
+    console.error('Erro ao ativar licença:', error);
+    res.status(500).json({ error: 'Erro interno ao validar licença.' });
+  }
+});
+
+// CLIENTE: Checar status da licença atual
+app.get('/api/licenca/status', async (req, res) => {
+  try {
+    const { data: licencaSnap } = await supabase.from('config').select('licenca_validade').eq('id', 'licenca').single();
+    if (licencaSnap && licencaSnap.licenca_validade) {
+      const validade = new Date(licencaSnap.licenca_validade);
+      const expirada = validade < new Date();
+      res.json({ expirada, validade: licencaSnap.licenca_validade });
+    } else {
+      res.json({ expirada: false, validade: null }); // Tratamento default se nulo
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: 'Erro ao verificar status' });
   }
 });
 

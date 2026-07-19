@@ -35,7 +35,19 @@ CREATE TABLE IF NOT EXISTS config (
   id TEXT PRIMARY KEY,
   password TEXT,
   empresa JSONB,
-  printer JSONB
+  printer JSONB,
+  licenca_validade TEXT
+);
+
+-- Tabela Central de Licenças (Para o dono gerenciar vendas SaaS)
+CREATE TABLE IF NOT EXISTS licencas (
+  id TEXT PRIMARY KEY,
+  codigo TEXT UNIQUE NOT NULL,
+  cpf_cnpj TEXT NOT NULL,
+  data_geracao TEXT NOT NULL,
+  validade_dias NUMERIC NOT NULL,
+  usada BOOLEAN NOT NULL DEFAULT false,
+  usada_em TEXT
 );
 
 -- ATIVAÇÃO DE POLÍTICAS DE SEGURANÇA (RLS)
@@ -45,8 +57,10 @@ ALTER TABLE produtos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comandas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE licencas ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow all on produtos" ON produtos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on comandas" ON comandas FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on vendas" ON vendas FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on config" ON config FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on licencas" ON licencas FOR ALL USING (true) WITH CHECK (true);
