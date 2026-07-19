@@ -11,7 +11,8 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const PORT = 3000;
 
 export const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // === DEFAULT VALUES ===
 const defaultEmpresa: Empresa = {
