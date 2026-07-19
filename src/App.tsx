@@ -59,8 +59,8 @@ export default function App() {
       } else {
         setLoginError(data.error || 'Senha incorreta');
       }
-    } catch (err) {
-      setLoginError('Erro de conexão ao servidor.');
+    } catch (err: any) {
+      setLoginError('Erro de conexão: ' + (err.message || String(err)));
     } finally {
       setIsLoggingIn(false);
     }
