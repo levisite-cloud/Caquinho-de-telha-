@@ -1,0 +1,6 @@
+{
+  "name": "PDV Bar e Restaurante",
+  "description": "Sistema de Ponto de Venda (PDV) e controle de vendas com comandas e relatórios para bares e restaurantes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

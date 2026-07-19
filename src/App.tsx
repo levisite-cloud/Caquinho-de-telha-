@@ -1,0 +1,2691 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Utensils,
+  Plus,
+  Minus,
+  Trash2,
+  PlusCircle,
+  DollarSign,
+  CreditCard,
+  QrCode,
+  Receipt,
+  Package,
+  Layers,
+  TrendingUp,
+  RefreshCw,
+  FileText,
+  CheckCircle,
+  X,
+  User,
+  Coffee,
+  Edit,
+  ChevronRight,
+  Search,
+  Check,
+  AlertCircle,
+  Printer,
+  Store,
+  Upload,
+  Cloud
+} from 'lucide-react';
+import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './types';
+
+export default function App() {
+  // Controle de Abas
+  const [activeTab, setActiveTab] = useState<'pdv' | 'comandas' | 'produtos' | 'relatorios' | 'empresa' | 'impressoras'>('pdv');
+
+  // Estados dos Dados
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [comandas, setComandas] = useState<Comanda[]>([]);
+  const [relatorio, setRelatorio] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Estados do PDV (Carrinho & Comandas)
+  const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
+  const [categoriaAtiva, setCategoriaAtiva] = useState<string>('Todos');
+  const [buscaProduto, setBuscaProduto] = useState<string>('');
+  const [comandaSelecionadaId, setComandaSelecionadaId] = useState<string>('');
+  const [modoVenda, setModoVenda] = useState<'direta' | 'comanda'>('direta');
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>('Dinheiro');
+
+  // Modais e Formulários
+  const [showNovaComandaModal, setShowNovaComandaModal] = useState<boolean>(false);
+  const [novaComandaIdentificador, setNovaComandaIdentificador] = useState<string>('');
+  
+  const [showProdutoModal, setShowProdutoModal] = useState<boolean>(false);
+  const [produtoEmEdicao, setProdutoEmEdicao] = useState<Produto | null>(null);
+  const [prodFormNome, setProdFormNome] = useState<string>('');
+  const [prodFormCategoria, setProdFormCategoria] = useState<string>('Bebidas');
+  const [prodFormPrecoCusto, setProdFormPrecoCusto] = useState<number>(0);
+  const [prodFormPrecoVenda, setProdFormPrecoVenda] = useState<number>(0);
+  const [prodFormEstoque, setProdFormEstoque] = useState<number>(0);
+  const [prodFormControlarEstoque, setProdFormControlarEstoque] = useState<boolean>(true);
+  const [prodFormEstoqueMinimo, setProdFormEstoqueMinimo] = useState<number>(5);
+
+  // Estados de Cadastro de Empresa
+  const [empresa, setEmpresa] = useState<Empresa>({
+    nome: 'Sabor Gourmet',
+    cnpj: '12.345.678/0001-99',
+    endereco: 'Av. Paulista, 1000 - São Paulo, SP',
+    telefone: '(11) 98765-4321',
+    slogan: 'O melhor sabor da culinária brasileira',
+    logo: ''
+  });
+  const [empresaFormNome, setEmpresaFormNome] = useState<string>('');
+  const [empresaFormCnpj, setEmpresaFormCnpj] = useState<string>('');
+  const [empresaFormEndereco, setEmpresaFormEndereco] = useState<string>('');
+  const [empresaFormTelefone, setEmpresaFormTelefone] = useState<string>('');
+  const [empresaFormSlogan, setEmpresaFormSlogan] = useState<string>('');
+  const [empresaFormLogo, setEmpresaFormLogo] = useState<string>('');
+
+  // Estados de Configuração de Impressão
+  const [printerConfig, setPrinterConfig] = useState<PrinterConfig>({
+    cozinhaIp: '192.168.1.100',
+    cozinhaPorta: 9100,
+    caixaIp: '192.168.1.200',
+    caixaPorta: 9100,
+    usarApiRemota: false,
+    apiUrl: 'http://localhost:8080/imprimir',
+    apiToken: '',
+    tipoImpressora: 'escpos'
+  });
+  const [printerFormCozinhaIp, setPrinterFormCozinhaIp] = useState<string>('');
+  const [printerFormCozinhaPorta, setPrinterFormCozinhaPorta] = useState<number>(9100);
+  const [printerFormCaixaIp, setPrinterFormCaixaIp] = useState<string>('');
+  const [printerFormCaixaPorta, setPrinterFormCaixaPorta] = useState<number>(9100);
+  const [printerFormUsarApiRemota, setPrinterFormUsarApiRemota] = useState<boolean>(false);
+  const [printerFormApiUrl, setPrinterFormApiUrl] = useState<string>('');
+  const [printerFormApiToken, setPrinterFormApiToken] = useState<string>('');
+  const [printerFormTipoImpressora, setPrinterFormTipoImpressora] = useState<'escpos' | 'raw' | 'json'>('escpos');
+
+  // Modal de Venda Concluída (Cupom Fiscal)
+  const [showCupomModal, setShowCupomModal] = useState<boolean>(false);
+  const [vendaRecente, setVendaRecente] = useState<Venda | null>(null);
+
+  // Estados para Simulação de Impressão (Cozinha e Cliente)
+  const [showImpressaoModal, setShowImpressaoModal] = useState<boolean>(false);
+  const [dadosImpressao, setDadosImpressao] = useState<{
+    tipo: 'cozinha' | 'cupom';
+    identificador: string;
+    itens: { nome: string; quantidade: number; precoVenda?: number }[];
+    data: string;
+    idReferencia?: string;
+  } | null>(null);
+  const [destinoImpressao, setDestinoImpressao] = useState<'cozinha' | 'copa' | 'ambas'>('cozinha');
+  const [incluirObservacao, setIncluirObservacao] = useState<boolean>(false);
+  const [observacaoTexto, setObservacaoTexto] = useState<string>('');
+  const [gerarArquivoTxt, setGerarArquivoTxt] = useState<boolean>(true);
+  const [isSimulandoImpressao, setIsSimulandoImpressao] = useState<boolean>(false);
+
+  const handleAbrirSimuladorImpressao = (
+    tipo: 'cozinha' | 'cupom',
+    identificador: string,
+    itens: { nome: string; quantidade: number; precoVenda?: number }[],
+    data: string,
+    idReferencia?: string
+  ) => {
+    setDadosImpressao({
+      tipo,
+      identificador,
+      itens,
+      data,
+      idReferencia
+    });
+    setDestinoImpressao(tipo === 'cozinha' ? 'cozinha' : 'ambas');
+    setIncluirObservacao(false);
+    setObservacaoTexto('');
+    setGerarArquivoTxt(true);
+    setShowImpressaoModal(true);
+  };
+
+  const executarImpressaoSimulada = async () => {
+    if (!dadosImpressao) return;
+    
+    setIsSimulandoImpressao(true);
+    
+    const cabecalho = dadosImpressao.tipo === 'cozinha' ? 'PEDIDO DE COZINHA' : 'CUPOM DE VENDA';
+    const nomeEmpresa = (empresa.nome || 'Sabor Gourmet').toUpperCase();
+    let txt = `======================================\n`;
+    txt += ` ${nomeEmpresa.padStart(Math.max(0, Math.floor((36 - nomeEmpresa.length) / 2)) + nomeEmpresa.length).padEnd(36, ' ')} \n`;
+    txt += `======================================\n`;
+    txt += `MODO: ${cabecalho}\n`;
+    txt += `DESTINO: ${destinoImpressao.toUpperCase()}\n`;
+    txt += `DATA: ${new Date(dadosImpressao.data).toLocaleString('pt-BR')}\n`;
+    txt += `IDENTIFICADOR: ${dadosImpressao.identificador}\n`;
+    if (dadosImpressao.idReferencia) {
+      txt += `REFERENCIA ID: ${dadosImpressao.idReferencia}\n`;
+    }
+    txt += `--------------------------------------\n`;
+    txt += `QTD    DESCRIÇÃO DO ITEM\n`;
+    txt += `--------------------------------------\n`;
+    
+    dadosImpressao.itens.forEach(item => {
+      const qtdStr = `${item.quantidade}x`.padEnd(6, ' ');
+      txt += `${qtdStr} ${item.nome}\n`;
+    });
+    
+    if (incluirObservacao && observacaoTexto.trim()) {
+      txt += `--------------------------------------\n`;
+      txt += `OBSERVAÇÃO: ${observacaoTexto.trim()}\n`;
+    }
+    
+    if (empresa.slogan) {
+      txt += `--------------------------------------\n`;
+      txt += `"${empresa.slogan}"\n`;
+    }
+
+    if (printerConfig.usarApiRemota) {
+      txt += `--------------------------------------\n`;
+      txt += `API REMOTA: ${printerConfig.apiUrl}\n`;
+    } else {
+      txt += `--------------------------------------\n`;
+      txt += `IP IMPRESSORA: ${dadosImpressao.tipo === 'cozinha' ? printerConfig.cozinhaIp : printerConfig.caixaIp}:${dadosImpressao.tipo === 'cozinha' ? printerConfig.cozinhaPorta : printerConfig.caixaPorta}\n`;
+    }
+    txt += `======================================\n`;
+    txt += `         CUPOM DE IMPRESSÃO           \n`;
+    txt += `======================================\n`;
+
+    try {
+      const response = await fetch('/api/imprimir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: dadosImpressao.tipo,
+          identificador: dadosImpressao.identificador,
+          itens: dadosImpressao.itens,
+          observacao: incluirObservacao ? observacaoTexto.trim() : '',
+          data: dadosImpressao.data,
+          textoFormatado: txt
+        })
+      });
+
+      const result = await response.json();
+      setIsSimulandoImpressao(false);
+
+      if (response.ok && result.success) {
+        // Se selecionou para baixar o arquivo .txt (opcional)
+        if (gerarArquivoTxt) {
+          const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `impressao_${dadosImpressao.tipo}_${dadosImpressao.identificador.replace(/[\s/]/g, '_')}.txt`;
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+
+        // Feedback
+        if (result.metodo === 'api_remota') {
+          mostrarFeedback(`Impresso via API remota com sucesso!`);
+        } else {
+          mostrarFeedback(`Enviado para impressora térmica (${result.detalhes.ip}:${result.detalhes.porta}) com sucesso!`);
+        }
+        
+        setShowImpressaoModal(false);
+      } else {
+        mostrarFeedback(result.error || 'Erro ao enviar comando de impressão para o servidor.', 'error');
+      }
+    } catch (err: any) {
+      setIsSimulandoImpressao(false);
+      mostrarFeedback('Erro de conexão ao enviar impressão.', 'error');
+    }
+  };
+
+  // --- BUSCA DE DADOS ---
+
+  const carregarProdutos = async () => {
+    try {
+      const res = await fetch('/api/produtos');
+      if (res.ok) {
+        const data = await res.json();
+        setProdutos(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar produtos:', err);
+    }
+  };
+
+  const carregarComandas = async () => {
+    try {
+      const res = await fetch('/api/comandas?ativas=true');
+      if (res.ok) {
+        const data = await res.json();
+        setComandas(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar comandas:', err);
+    }
+  };
+
+  const carregarRelatorio = async () => {
+    try {
+      const res = await fetch('/api/vendas/relatorio');
+      if (res.ok) {
+        const data = await res.json();
+        setRelatorio(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar relatório:', err);
+    }
+  };
+
+  const carregarEmpresa = async () => {
+    try {
+      const res = await fetch('/api/empresa');
+      if (res.ok) {
+        const data = await res.json();
+        setEmpresa(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar dados da empresa:', err);
+    }
+  };
+
+  const salvarEmpresaForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!empresaFormNome.trim()) {
+      mostrarFeedback('O nome da empresa é obrigatório.', 'error');
+      return;
+    }
+
+    const payload = {
+      nome: empresaFormNome.trim(),
+      cnpj: empresaFormCnpj.trim(),
+      endereco: empresaFormEndereco.trim(),
+      telefone: empresaFormTelefone.trim(),
+      slogan: empresaFormSlogan.trim(),
+      logo: empresaFormLogo
+    };
+
+    try {
+      const res = await fetch('/api/empresa', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setEmpresa(data);
+        mostrarFeedback('Dados da empresa atualizados com sucesso!');
+      } else {
+        mostrarFeedback('Erro ao salvar dados da empresa.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao salvar dados da empresa.', 'error');
+    }
+  };
+
+  const abrirAbaEmpresa = () => {
+    setEmpresaFormNome(empresa.nome || '');
+    setEmpresaFormCnpj(empresa.cnpj || '');
+    setEmpresaFormEndereco(empresa.endereco || '');
+    setEmpresaFormTelefone(empresa.telefone || '');
+    setEmpresaFormSlogan(empresa.slogan || '');
+    setEmpresaFormLogo(empresa.logo || '');
+    setActiveTab('empresa');
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        mostrarFeedback('A imagem da logo deve ter no máximo 2MB.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setEmpresaFormLogo(reader.result);
+          mostrarFeedback('Logo carregada! Lembre de salvar as alterações.');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const carregarPrinterConfig = async () => {
+    try {
+      const res = await fetch('/api/printer-config');
+      if (res.ok) {
+        const data = await res.json();
+        setPrinterConfig(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar configuração de impressoras:', err);
+    }
+  };
+
+  const salvarPrinterConfigForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      cozinhaIp: printerFormCozinhaIp.trim(),
+      cozinhaPorta: Number(printerFormCozinhaPorta) || 9100,
+      caixaIp: printerFormCaixaIp.trim(),
+      caixaPorta: Number(printerFormCaixaPorta) || 9100,
+      usarApiRemota: printerFormUsarApiRemota,
+      apiUrl: printerFormApiUrl.trim(),
+      apiToken: printerFormApiToken.trim(),
+      tipoImpressora: printerFormTipoImpressora
+    };
+
+    try {
+      const res = await fetch('/api/printer-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setPrinterConfig(data);
+        mostrarFeedback('Configurações de impressoras atualizadas com sucesso!');
+      } else {
+        mostrarFeedback('Erro ao salvar configurações de impressoras.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao salvar configurações de impressoras.', 'error');
+    }
+  };
+
+  const abrirAbaImpressoras = () => {
+    setPrinterFormCozinhaIp(printerConfig.cozinhaIp || '192.168.1.100');
+    setPrinterFormCozinhaPorta(printerConfig.cozinhaPorta || 9100);
+    setPrinterFormCaixaIp(printerConfig.caixaIp || '192.168.1.200');
+    setPrinterFormCaixaPorta(printerConfig.caixaPorta || 9100);
+    setPrinterFormUsarApiRemota(!!printerConfig.usarApiRemota);
+    setPrinterFormApiUrl(printerConfig.apiUrl || '');
+    setPrinterFormApiToken(printerConfig.apiToken || '');
+    setPrinterFormTipoImpressora(printerConfig.tipoImpressora || 'escpos');
+    setActiveTab('impressoras');
+  };
+
+  const inicializarDados = async () => {
+    setIsLoading(true);
+    await Promise.all([
+      carregarProdutos(),
+      carregarComandas(),
+      carregarRelatorio(),
+      carregarEmpresa(),
+      carregarPrinterConfig()
+    ]);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    inicializarDados();
+  }, []);
+
+  // Exibe feedback temporário na tela
+  const mostrarFeedback = (text: string, type: 'success' | 'error' = 'success') => {
+    setFeedbackMsg({ text, type });
+    setTimeout(() => {
+      setFeedbackMsg(null);
+    }, 4000);
+  };
+
+  // --- MÉTODOS DO PDV E CARRINHO ---
+
+  // Ao alterar o modo de venda (Direta ou Comanda)
+  useEffect(() => {
+    if (modoVenda === 'direta') {
+      setCarrinho([]);
+      setComandaSelecionadaId('');
+    } else if (modoVenda === 'comanda' && comandaSelecionadaId) {
+      const comanda = comandas.find(c => c.id === comandaSelecionadaId);
+      if (comanda) {
+        setCarrinho(comanda.itens);
+      }
+    } else {
+      setCarrinho([]);
+    }
+  }, [modoVenda, comandaSelecionadaId]);
+
+  // Se o usuário selecionar uma comanda na lista enquanto no modo comanda
+  const handleSelecionarComanda = (id: string) => {
+    setComandaSelecionadaId(id);
+    const comanda = comandas.find(c => c.id === id);
+    if (comanda) {
+      setCarrinho(comanda.itens);
+      mostrarFeedback(`Comanda "${comanda.identificador}" carregada no PDV.`);
+    }
+  };
+
+  // Adicionar produto ao carrinho
+  const adicionarAoCarrinho = (produto: Produto) => {
+    // Alerta de estoque baixo opcional
+    if (produto.controlarEstoque && produto.estoque <= 0) {
+      mostrarFeedback(`Atenção: "${produto.nome}" está sem estoque, mas a venda será permitida.`, 'error');
+    }
+
+    setCarrinho(prev => {
+      const itemExistente = prev.find(item => item.produtoId === produto.id);
+      if (itemExistente) {
+        return prev.map(item =>
+          item.produtoId === produto.id
+            ? { ...item, quantidade: item.quantidade + 1 }
+            : item
+        );
+      } else {
+        return [
+          ...prev,
+          {
+            produtoId: produto.id,
+            nome: produto.nome,
+            quantidade: 1,
+            precoVenda: produto.precoVenda
+          }
+        ];
+      }
+    });
+  };
+
+  // Alterar quantidade do item no carrinho
+  const alterarQuantidade = (produtoId: string, delta: number) => {
+    setCarrinho(prev => {
+      return prev
+        .map(item => {
+          if (item.produtoId === produtoId) {
+            const novaQtd = item.quantidade + delta;
+            return { ...item, quantidade: novaQtd };
+          }
+          return item;
+        })
+        .filter(item => item.quantidade > 0);
+    });
+  };
+
+  // Remover item do carrinho
+  const removerDoCarrinho = (produtoId: string) => {
+    setCarrinho(prev => prev.filter(item => item.produtoId !== produtoId));
+  };
+
+  // Calcular total do carrinho
+  const totalCarrinho = carrinho.reduce((acc, item) => acc + (item.precoVenda * item.quantidade), 0);
+
+  // Salvar itens atuais na comanda ativa (sem fechar/pagar)
+  const salvarItensNaComanda = async () => {
+    if (!comandaSelecionadaId) {
+      mostrarFeedback('Selecione ou abra uma comanda primeiro.', 'error');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/comandas/${comandaSelecionadaId}/itens`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itens: carrinho })
+      });
+      if (res.ok) {
+        mostrarFeedback('Comanda atualizada com sucesso no servidor!');
+        await carregarComandas();
+      } else {
+        const err = await res.json();
+        mostrarFeedback(err.error || 'Erro ao atualizar comanda.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao salvar comanda.', 'error');
+    }
+  };
+
+  // Finalizar e receber pagamento (Fecha a venda e dá baixa no estoque)
+  const finalizarVenda = async () => {
+    if (carrinho.length === 0) {
+      mostrarFeedback('O carrinho está vazio!', 'error');
+      return;
+    }
+
+    try {
+      const body: any = {
+        formaPagamento,
+        comandaId: modoVenda === 'comanda' ? comandaSelecionadaId : undefined,
+        itens: modoVenda === 'direta' ? carrinho : undefined
+      };
+
+      const res = await fetch('/api/vendas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        const vendaEfetuada: Venda = await res.json();
+        setVendaRecente(vendaEfetuada);
+        setShowCupomModal(true);
+        mostrarFeedback('Venda realizada e registrada com sucesso!');
+        
+        // Limpa carrinho e estados de seleção
+        setCarrinho([]);
+        setComandaSelecionadaId('');
+        
+        // Atualiza dados
+        await inicializarDados();
+      } else {
+        const err = await res.json();
+        mostrarFeedback(err.error || 'Erro ao processar venda.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao processar venda.', 'error');
+    }
+  };
+
+  // --- MÉTODOS DE CRIAÇÃO E MANIPULAÇÃO DE COMANDAS ---
+
+  const criarNovaComanda = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!novaComandaIdentificador.trim()) {
+      mostrarFeedback('Digite uma mesa ou nome válido.', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/comandas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identificador: novaComandaIdentificador })
+      });
+
+      if (res.ok) {
+        const novaC: Comanda = await res.json();
+        mostrarFeedback(`Comanda "${novaC.identificador}" aberta!`);
+        setNovaComandaIdentificador('');
+        setShowNovaComandaModal(false);
+        await carregarComandas();
+        
+        // Seleciona automaticamente no PDV
+        setModoVenda('comanda');
+        setComandaSelecionadaId(novaC.id);
+      } else {
+        const err = await res.json();
+        mostrarFeedback(err.error || 'Erro ao abrir comanda.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao criar comanda.', 'error');
+    }
+  };
+
+  const deletarComanda = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja cancelar esta comanda ativa? Todos os itens adicionados serão perdidos.')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/comandas/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        mostrarFeedback('Comanda cancelada.');
+        if (comandaSelecionadaId === id) {
+          setComandaSelecionadaId('');
+          setCarrinho([]);
+        }
+        await carregarComandas();
+      } else {
+        mostrarFeedback('Erro ao cancelar comanda.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão.', 'error');
+    }
+  };
+
+  // --- MÉTODOS DE PRODUTOS (CRUD) ---
+
+  const abrirModalProduto = (produto: Produto | null = null) => {
+    if (produto) {
+      setProdutoEmEdicao(produto);
+      setProdFormNome(produto.nome);
+      setProdFormCategoria(produto.categoria);
+      setProdFormPrecoCusto(produto.precoCusto);
+      setProdFormPrecoVenda(produto.precoVenda);
+      setProdFormEstoque(produto.estoque);
+      setProdFormControlarEstoque(produto.controlarEstoque);
+      setProdFormEstoqueMinimo(produto.estoqueMinimo !== undefined ? produto.estoqueMinimo : 5);
+    } else {
+      setProdutoEmEdicao(null);
+      setProdFormNome('');
+      setProdFormCategoria('Bebidas');
+      setProdFormPrecoCusto(0);
+      setProdFormPrecoVenda(0);
+      setProdFormEstoque(10);
+      setProdFormControlarEstoque(true);
+      setProdFormEstoqueMinimo(5);
+    }
+    setShowProdutoModal(true);
+  };
+
+  const salvarProdutoForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prodFormNome.trim()) {
+      mostrarFeedback('O nome do produto é obrigatório.', 'error');
+      return;
+    }
+    if (prodFormPrecoVenda <= 0) {
+      mostrarFeedback('O preço de venda deve ser maior que zero.', 'error');
+      return;
+    }
+
+    const payload = {
+      nome: prodFormNome.trim(),
+      categoria: prodFormCategoria,
+      precoCusto: Number(prodFormPrecoCusto),
+      precoVenda: Number(prodFormPrecoVenda),
+      estoque: prodFormControlarEstoque ? Number(prodFormEstoque) : 0,
+      controlarEstoque: prodFormControlarEstoque,
+      estoqueMinimo: prodFormControlarEstoque ? Number(prodFormEstoqueMinimo) : undefined
+    };
+
+    try {
+      let res;
+      if (produtoEmEdicao) {
+        res = await fetch(`/api/produtos/${produtoEmEdicao.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch('/api/produtos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (res.ok) {
+        mostrarFeedback(produtoEmEdicao ? 'Produto atualizado!' : 'Produto cadastrado!');
+        setShowProdutoModal(false);
+        setProdutoEmEdicao(null);
+        await carregarProdutos();
+      } else {
+        const err = await res.json();
+        mostrarFeedback(err.error || 'Erro ao salvar produto.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao salvar produto.', 'error');
+    }
+  };
+
+  const deletarProduto = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja remover este produto?')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/produtos/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        mostrarFeedback('Produto removido.');
+        await carregarProdutos();
+      } else {
+        const err = await res.json();
+        mostrarFeedback(err.error || 'Erro ao remover produto.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão.', 'error');
+    }
+  };
+
+  // --- FUNÇÃO AUXILIAR DE DEMONSTRAÇÃO ---
+
+  const reiniciarDemonstracao = async () => {
+    if (!window.confirm('Deseja reiniciar as vendas de hoje, comandas e estoque para os valores iniciais de teste?')) {
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/vendas/reiniciar', { method: 'POST' });
+      if (res.ok) {
+        mostrarFeedback('Caixa e Comandas reiniciados para demonstração!');
+        setCarrinho([]);
+        setComandaSelecionadaId('');
+        await inicializarDados();
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao reiniciar.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filtragem de produtos para exibição no PDV
+  const produtosFiltrados = produtos.filter(p => {
+    const correspondeCategoria = categoriaAtiva === 'Todos' || p.categoria === categoriaAtiva;
+    const correspondeBusca = p.nome.toLowerCase().includes(buscaProduto.toLowerCase());
+    return correspondeCategoria && correspondeBusca;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 flex flex-col font-sans" id="pdv-app-container">
+      
+      {/* HEADER PRINCIPAL */}
+      <header className="bg-[#121214] text-white shadow-md border-b border-zinc-800" id="main-header">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500 rounded-xl text-zinc-950 shadow-inner flex items-center justify-center overflow-hidden w-11 h-11 shrink-0">
+              {empresa.logo ? (
+                <img
+                  src={empresa.logo}
+                  alt="Logo"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover rounded-lg"
+                  id="header-empresa-logo"
+                />
+              ) : (
+                <Utensils className="w-6 h-6" />
+              )}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                {empresa.nome} <span className="text-xs bg-amber-500/20 text-amber-400 font-medium px-2 py-0.5 rounded border border-amber-500/30">PDV & Bar</span>
+              </h1>
+              <p className="text-xs text-zinc-400">{empresa.slogan || 'Controle Inteligente de Almoço, Bebidas e Comandas'}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-zinc-300 font-mono bg-[#1E1E22] px-3 py-1.5 rounded-lg border border-zinc-800">
+              📆 {new Date().toLocaleDateString('pt-BR')}
+            </span>
+
+            <button
+              onClick={reiniciarDemonstracao}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-zinc-950 border border-rose-500/20 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer"
+              id="btn-demo-reset"
+              title="Reinicia comandas e limpa vendas do dia para teste limpo"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Resetar Demo
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* FEEDBACK FLOATING TOAST */}
+      {feedbackMsg && (
+        <div
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl border text-sm max-w-sm animate-bounce ${
+            feedbackMsg.type === 'success'
+              ? 'bg-[#121214] text-emerald-400 border-emerald-500/30 shadow-emerald-500/10'
+              : 'bg-[#121214] text-rose-400 border-rose-500/30 shadow-rose-500/10'
+          }`}
+          id="floating-feedback"
+        >
+          {feedbackMsg.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />}
+          <span>{feedbackMsg.text}</span>
+        </div>
+      )}
+
+      {/* SUB-HEADER / ABAS DE NAVEGAÇÃO */}
+      <div className="bg-[#121214] border-b border-zinc-800 sticky top-0 z-10 shadow-lg" id="navigation-bar">
+        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center overflow-x-auto">
+          <nav className="flex gap-1 py-2">
+            <button
+              onClick={() => setActiveTab('pdv')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'pdv'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-pdv"
+            >
+              <Receipt className="w-4 h-4" />
+              PDV (Frente de Caixa)
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('comandas');
+                carregarComandas();
+              }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'comandas'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-comandas"
+            >
+              <Layers className="w-4 h-4" />
+              Comandas/Mesas
+              {comandas.length > 0 && (
+                <span className="bg-amber-500 text-zinc-950 text-xs font-bold px-1.5 py-0.5 rounded-full ml-1">
+                  {comandas.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('produtos');
+                carregarProdutos();
+              }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'produtos'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-produtos"
+            >
+              <Package className="w-4 h-4" />
+              Gerenciar Produtos
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('relatorios');
+                carregarRelatorio();
+              }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'relatorios'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-relatorios"
+            >
+              <TrendingUp className="w-4 h-4" />
+              Fechamento & Relatório
+            </button>
+            <button
+              onClick={abrirAbaEmpresa}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'empresa'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-empresa"
+            >
+              <Store className="w-4 h-4 text-amber-500" />
+              Dados da Empresa
+            </button>
+            <button
+              onClick={abrirAbaImpressoras}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'impressoras'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-impressoras"
+            >
+              <Printer className="w-4 h-4 text-amber-500" />
+              Configurações de Impressão
+            </button>
+          </nav>
+
+          <div className="hidden md:flex items-center gap-2 text-xs text-zinc-400">
+            <span>Servidor:</span>
+            <span className="flex items-center gap-1 font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+              Ativo
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ÁREA DE CONTEÚDO PRINCIPAL */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col justify-stretch" id="main-content-wrapper">
+        
+        {isLoading ? (
+          <div className="flex-1 flex flex-col justify-center items-center py-20 gap-3" id="loading-spinner-container">
+            <RefreshCw className="w-10 h-10 text-amber-500 animate-spin" />
+            <p className="text-sm font-medium text-zinc-400">Buscando informações no servidor...</p>
+          </div>
+        ) : (
+          <>
+            {/* 1. ABA DE PDV (FRENTE DE CAIXA) */}
+            {activeTab === 'pdv' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1" id="pdv-grid">
+                
+                {/* COLUNA ESQUERDA: CATÁLOGO DE PRODUTOS */}
+                <div className="lg:col-span-7 flex flex-col gap-4" id="pdv-catalog-col">
+                  {/* Busca e Filtros de Categorias */}
+                  <div className="bg-[#121214] p-4 rounded-xl shadow-md border border-zinc-800 flex flex-col gap-3">
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-amber-500 absolute left-3 top-3" />
+                      <input
+                        type="text"
+                        placeholder="Buscar produto pelo nome..."
+                        value={buscaProduto}
+                        onChange={(e) => setBuscaProduto(e.target.value)}
+                        className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden text-sm rounded-lg pl-9 pr-4 py-2 text-zinc-100 placeholder-zinc-500 font-medium"
+                        id="search-input-pdv"
+                      />
+                    </div>
+
+                    <div className="flex gap-1.5 overflow-x-auto pb-1" id="category-filters-container">
+                      {['Todos', 'Bebidas', 'Almoço/Pratos', 'Sobremesas'].map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setCategoriaAtiva(cat)}
+                          className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                            categoriaAtiva === cat
+                              ? 'bg-amber-500 text-zinc-950 font-bold'
+                              : 'bg-[#1E1E22] text-zinc-400 hover:bg-[#25252A] hover:text-zinc-200'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Grid de Produtos */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-[580px] pr-1" id="pdv-products-grid">
+                    {produtosFiltrados.length === 0 ? (
+                      <div className="col-span-full bg-[#121214] border border-zinc-800 rounded-xl p-10 text-center text-zinc-400" id="no-products-found">
+                        <Coffee className="w-10 h-10 mx-auto text-zinc-600 mb-2" />
+                        <p className="text-sm font-medium">Nenhum produto cadastrado nessa categoria.</p>
+                        <button
+                          onClick={() => abrirModalProduto()}
+                          className="mt-3 inline-flex items-center gap-1 text-xs bg-amber-500 text-zinc-950 px-3 py-1.5 rounded-lg hover:bg-amber-400 font-semibold cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Cadastrar Novo
+                        </button>
+                      </div>
+                    ) : (
+                      produtosFiltrados.map((produto) => {
+                        const esgotado = produto.controlarEstoque && produto.estoque <= 0;
+                        return (
+                          <div
+                            key={produto.id}
+                            onClick={() => adicionarAoCarrinho(produto)}
+                            className={`bg-[#121214] border hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/[0.03] hover:-translate-y-0.5 rounded-xl p-3.5 flex flex-col justify-between transition-all duration-200 cursor-pointer text-left relative group ${
+                              esgotado ? 'opacity-60 border-rose-950/50 bg-rose-950/5' : 'border-zinc-800'
+                            }`}
+                            id={`produto-card-${produto.id}`}
+                          >
+                            <div>
+                              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
+                                {produto.categoria}
+                              </span>
+                              <h3 className="text-sm font-semibold text-zinc-200 mt-1 leading-snug group-hover:text-amber-400 transition-colors">
+                                {produto.nome}
+                              </h3>
+                            </div>
+
+                            <div className="mt-4 flex justify-between items-end">
+                              <div>
+                                <p className="text-[10px] text-zinc-400">Preço</p>
+                                <p className="text-base font-extrabold text-amber-400 font-mono">
+                                  R$ {produto.precoVenda.toFixed(2)}
+                                </p>
+                              </div>
+
+                              <div className="flex flex-col items-end gap-1">
+                                {produto.controlarEstoque ? (
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                    esgotado
+                                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                      : produto.estoque < 15
+                                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                      : 'bg-zinc-800 text-zinc-400'
+                                  }`}>
+                                    {esgotado ? 'Esgotado' : `Estoque: ${produto.estoque}`}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] bg-zinc-800 text-zinc-400 font-medium px-1.5 py-0.5 rounded">
+                                    Livre ♾️
+                                  </span>
+                                )}
+
+                                <div className="p-1 bg-amber-500/10 text-amber-400 rounded-lg group-hover:bg-amber-500 group-hover:text-zinc-950 transition-all">
+                                  <Plus className="w-3.5 h-3.5" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* COLUNA DIREITA: OPERADOR DE CAIXA / CARRINHO */}
+                <div className="lg:col-span-5 flex flex-col" id="pdv-cart-col">
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl shadow-md flex flex-col h-full overflow-hidden">
+                    
+                    {/* SELETOR DE MODO (BALCÃO VS COMANDA) */}
+                    <div className="bg-[#0A0A0B] p-3 flex flex-col gap-2 border-b border-zinc-800">
+                      <div className="grid grid-cols-2 gap-1 bg-[#1A1A1D] p-1 rounded-lg">
+                        <button
+                          onClick={() => setModoVenda('direta')}
+                          className={`py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                            modoVenda === 'direta'
+                              ? 'bg-[#121214] text-amber-500 border border-amber-500/15 shadow-sm'
+                              : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1E1E22]/50'
+                          }`}
+                          id="btn-modo-venda-direta"
+                        >
+                          Venda Direta (Balcão)
+                        </button>
+                        <button
+                          onClick={() => setModoVenda('comanda')}
+                          className={`py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                            modoVenda === 'comanda'
+                              ? 'bg-[#121214] text-amber-500 border border-amber-500/15 shadow-sm'
+                              : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1E1E22]/50'
+                          }`}
+                          id="btn-modo-venda-comanda"
+                        >
+                          Usar Comanda / Mesa
+                        </button>
+                      </div>
+
+                      {/* Seletor ou Criação de Comanda se modo Comanda ativo */}
+                      {modoVenda === 'comanda' && (
+                        <div className="flex gap-2 items-center mt-1 animate-fadeIn">
+                          {comandas.length === 0 ? (
+                            <div className="text-xs text-amber-400 flex-1 py-1">
+                              Nenhuma comanda ativa aberta.
+                            </div>
+                          ) : (
+                            <select
+                              value={comandaSelecionadaId}
+                              onChange={(e) => handleSelecionarComanda(e.target.value)}
+                              className="bg-[#1E1E22] text-zinc-100 text-xs border border-zinc-800 rounded-lg px-2 py-1.5 flex-1 focus:outline-hidden focus:border-amber-500/50 font-medium cursor-pointer"
+                              id="select-comanda-pdv"
+                            >
+                              <option value="">-- Selecione uma Comanda --</option>
+                              {comandas.map(c => (
+                                <option key={c.id} value={c.id}>
+                                  {c.identificador} ({c.itens.length} itens)
+                                </option>
+                              ))}
+                            </select>
+                          )}
+
+                          <button
+                            onClick={() => setShowNovaComandaModal(true)}
+                            className="bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer"
+                            id="btn-abrir-comanda-pdv"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" /> Abrir Comanda
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* LISTAGEM DOS ITENS NO CARRINHO */}
+                    <div className="flex-1 p-4 overflow-y-auto min-h-[220px]" id="cart-items-container">
+                      <div className="flex justify-between items-center pb-2.5 border-b border-zinc-800 mb-3">
+                        <h3 className="font-bold text-zinc-100 text-sm flex items-center gap-1.5">
+                          <Receipt className="w-4 h-4 text-amber-500" />
+                          Itens do Pedido
+                        </h3>
+                        <span className="text-xs bg-[#1E1E22] text-amber-400 font-bold px-2 py-0.5 rounded border border-zinc-800">
+                          {carrinho.reduce((acc, i) => acc + i.quantidade, 0)} itens
+                        </span>
+                      </div>
+
+                      {carrinho.length === 0 ? (
+                        <div className="flex flex-col justify-center items-center py-10 text-center text-zinc-500" id="cart-empty-state">
+                          <Coffee className="w-12 h-12 text-zinc-700 mb-2" />
+                          <p className="text-sm font-medium">Carrinho de compras vazio</p>
+                          <p className="text-xs mt-1 text-zinc-500 max-w-xs">
+                            {modoVenda === 'comanda'
+                              ? 'Selecione uma comanda ativa para ver os itens ou adicione novos clicando nos produtos à esquerda.'
+                              : 'Clique nos produtos à esquerda para adicioná-los ao caixa.'}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2.5" id="cart-items-list">
+                          {carrinho.map((item) => (
+                            <div
+                              key={item.produtoId}
+                              className="flex items-center justify-between p-2.5 bg-[#1E1E22] border border-zinc-800/80 rounded-lg hover:bg-[#25252A] transition-colors"
+                              id={`cart-item-${item.produtoId}`}
+                            >
+                              <div className="flex-1 min-w-0 pr-2">
+                                <h4 className="text-xs font-bold text-zinc-100 truncate">
+                                  {item.nome}
+                                </h4>
+                                <span className="text-[10px] font-semibold text-zinc-400 font-mono">
+                                  R$ {item.precoVenda.toFixed(2)} x {item.quantidade}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center bg-[#121214] border border-zinc-800 rounded-md">
+                                  <button
+                                    onClick={() => alterarQuantidade(item.produtoId, -1)}
+                                    className="p-1 hover:bg-[#1E1E22] text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                                    title="Remover 1"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className="px-2 text-xs font-extrabold text-zinc-200 font-mono select-none">
+                                    {item.quantidade}
+                                  </span>
+                                  <button
+                                    onClick={() => alterarQuantidade(item.produtoId, 1)}
+                                    className="p-1 hover:bg-[#1E1E22] text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                                    title="Adicionar 1"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                </div>
+
+                                <div className="text-right w-16">
+                                  <p className="text-xs font-extrabold text-amber-400 font-mono">
+                                    R$ {(item.precoVenda * item.quantidade).toFixed(2)}
+                                  </p>
+                                </div>
+
+                                <button
+                                  onClick={() => removerDoCarrinho(item.produtoId)}
+                                  className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                  title="Remover item"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SUB-TOTAL & FORMA DE PAGAMENTO */}
+                    <div className="bg-[#161618] p-4 border-t border-zinc-800" id="cart-actions-container">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-sm font-bold text-zinc-400">Total Geral:</span>
+                        <span className="text-2xl font-black text-amber-400 font-mono">
+                          R$ {totalCarrinho.toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* Método de Pagamento */}
+                      <div className="mb-4">
+                        <p className="text-xs font-bold text-zinc-400 mb-2">Forma de Pagamento:</p>
+                        <div className="grid grid-cols-4 gap-1.5" id="payment-methods-grid">
+                          {(['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'PIX'] as FormaPagamento[]).map((forma) => {
+                            const iconMap = {
+                              'Dinheiro': <DollarSign className="w-4 h-4 text-emerald-400" />,
+                              'Cartão de Crédito': <CreditCard className="w-4 h-4 text-sky-400" />,
+                              'Cartão de Débito': <CreditCard className="w-4 h-4 text-blue-400" />,
+                              'PIX': <QrCode className="w-4 h-4 text-teal-400" />
+                            };
+                            return (
+                              <button
+                                key={forma}
+                                type="button"
+                                onClick={() => setFormaPagamento(forma)}
+                                className={`p-2 flex flex-col items-center justify-center gap-1.5 border rounded-lg text-[10px] font-bold text-center transition-all cursor-pointer ${
+                                  formaPagamento === forma
+                                    ? 'bg-amber-500 text-zinc-950 border-amber-500 shadow-md font-bold'
+                                    : 'bg-[#1E1E22] text-zinc-300 border-zinc-800 hover:bg-[#25252A] hover:text-zinc-200'
+                                }`}
+                              >
+                                {iconMap[forma]}
+                                <span className="truncate w-full leading-tight">{forma}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Botões de Ação Final */}
+                      <div className="flex gap-2">
+                        {modoVenda === 'comanda' && comandaSelecionadaId && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={salvarItensNaComanda}
+                              className="flex-1 bg-[#1E1E22] hover:bg-[#25252A] text-zinc-200 border border-zinc-800 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                              id="btn-salvar-comanda"
+                            >
+                              Salvar na Comanda
+                            </button>
+                            {carrinho.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const selectedComanda = comandas.find(c => c.id === comandaSelecionadaId);
+                                  handleAbrirSimuladorImpressao(
+                                    'cozinha',
+                                    selectedComanda?.identificador || 'Comanda',
+                                    carrinho,
+                                    new Date().toISOString(),
+                                    comandaSelecionadaId
+                                  );
+                                }}
+                                className="bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 px-3.5 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                id="btn-imprimir-carrinho"
+                                title="Imprimir comanda atual para a cozinha"
+                              >
+                                <Printer className="w-4 h-4 text-amber-500 shrink-0" />
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={finalizarVenda}
+                          disabled={carrinho.length === 0}
+                          className={`flex-2 py-3 rounded-lg text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            carrinho.length === 0
+                              ? 'bg-[#1E1E22] text-zinc-600 cursor-not-allowed border border-zinc-800/50'
+                              : 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-md hover:shadow-lg'
+                          }`}
+                          id="btn-finalizar-pagamento"
+                        >
+                          <Check className="w-4 h-4" />
+                          {modoVenda === 'comanda' ? 'Receber Comanda' : 'Concluir Venda'}
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* 2. TAB DE CONTROLE DE COMANDAS / MESAS */}
+            {activeTab === 'comandas' && (
+              <div className="flex flex-col gap-4 animate-fadeIn" id="comandas-board">
+                <div className="bg-[#121214] p-4 rounded-xl border border-zinc-800 shadow-md flex justify-between items-center">
+                  <div>
+                    <h2 className="text-base font-bold text-zinc-100">Quadro de Comandas e Mesas Ativas</h2>
+                    <p className="text-xs text-zinc-400">Acompanhe os pedidos de clientes e realize adicionais gradativos</p>
+                  </div>
+                  <button
+                    onClick={() => setShowNovaComandaModal(true)}
+                    className="bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 cursor-pointer"
+                    id="btn-abrir-nova-comanda-aba"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    Abrir Comanda / Mesa
+                  </button>
+                </div>
+
+                {comandas.length === 0 ? (
+                  <div className="bg-[#121214] rounded-xl border border-zinc-800 p-16 text-center text-zinc-400" id="comandas-empty-state">
+                    <Layers className="w-12 h-12 mx-auto text-zinc-600 mb-3" />
+                    <p className="text-sm font-semibold text-zinc-200">Sem comandas abertas no momento.</p>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                      Abra uma comanda para mesa ou balcão para gerenciar consumos cumulativos antes do pagamento.
+                    </p>
+                    <button
+                      onClick={() => setShowNovaComandaModal(true)}
+                      className="mt-4 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-4 py-2 rounded-lg cursor-pointer"
+                    >
+                      Abrir Primeira Comanda
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="comandas-cards-grid">
+                    {comandas.map((comanda) => {
+                      const totalC = comanda.itens.reduce((acc, item) => acc + (item.precoVenda * item.quantidade), 0);
+                      const totalQtd = comanda.itens.reduce((acc, item) => acc + item.quantidade, 0);
+
+                      return (
+                        <div
+                          key={comanda.id}
+                          className="bg-[#121214] border border-zinc-800 rounded-xl shadow-md overflow-hidden flex flex-col justify-between"
+                          id={`comanda-board-card-${comanda.id}`}
+                        >
+                          {/* Top da comanda */}
+                          <div className="p-4 bg-[#1A1A1D] text-white flex justify-between items-start border-b border-zinc-800/60">
+                            <div>
+                              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                                Mesa / Comanda Ativa
+                              </span>
+                              <h3 className="text-base font-extrabold text-zinc-100 mt-1.5 flex items-center gap-1.5">
+                                <User className="w-4 h-4 text-zinc-500" />
+                                {comanda.identificador}
+                              </h3>
+                            </div>
+                            <span className="text-xs font-mono text-zinc-400">
+                              🕒 {new Date(comanda.dataAbertura).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+
+                          {/* Itens adicionados */}
+                          <div className="p-4 flex-1 border-b border-zinc-800/60 overflow-y-auto max-h-[160px]">
+                            <p className="text-xs font-bold text-zinc-400 mb-2">Consumindo:</p>
+                            {comanda.itens.length === 0 ? (
+                              <p className="text-xs italic text-zinc-500 py-2">Sem itens registrados ainda.</p>
+                            ) : (
+                              <div className="flex flex-col gap-1.5">
+                                {comanda.itens.map((item, idx) => (
+                                  <div key={idx} className="flex justify-between items-center text-xs">
+                                    <span className="text-zinc-300 truncate pr-2">
+                                      <strong className="text-amber-400 font-mono">{item.quantidade}x</strong> {item.nome}
+                                    </span>
+                                    <span className="font-mono text-zinc-400 shrink-0">
+                                      R$ {(item.precoVenda * item.quantidade).toFixed(2)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Rodapé do card da comanda */}
+                          <div className="p-4 bg-[#161618] flex flex-col gap-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-semibold text-zinc-400">Parcial ({totalQtd} itens):</span>
+                              <span className="text-base font-extrabold text-amber-400 font-mono">
+                                R$ {totalC.toFixed(2)}
+                              </span>
+                            </div>
+
+                            {comanda.itens.length > 0 && (
+                              <button
+                                onClick={() => handleAbrirSimuladorImpressao('cozinha', comanda.identificador, comanda.itens, new Date().toISOString(), comanda.id)}
+                                className="w-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                id={`btn-imprimir-comanda-${comanda.id}`}
+                              >
+                                <Printer className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                Imprimir p/ Cozinha
+                              </button>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                onClick={() => {
+                                  setActiveTab('pdv');
+                                  setModoVenda('comanda');
+                                  setComandaSelecionadaId(comanda.id);
+                                }}
+                                className="bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                title="Enviar comanda ao carrinho para adicionar mais itens ou pagar"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                Adicionar / Pagar
+                              </button>
+
+                              <button
+                                onClick={() => deletarComanda(comanda.id)}
+                                className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Cancelar Comanda
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 3. TAB DE ESTOQUE E PRODUTOS (CRUD COMPLETO) */}
+            {activeTab === 'produtos' && (
+              <div className="flex flex-col gap-4 animate-fadeIn" id="produtos-crud-tab">
+                <div className="bg-[#121214] p-4 rounded-xl border border-zinc-800 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-base font-bold text-zinc-100">Cadastro de Produtos e Estoque</h2>
+                    <p className="text-xs text-zinc-400">Gerencie o cardápio e controle quais itens têm baixa inteligente de estoque</p>
+                  </div>
+                  <button
+                    onClick={() => abrirModalProduto()}
+                    className="bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 cursor-pointer"
+                    id="btn-cadastrar-novo-produto-aba"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Cadastrar Novo Produto
+                  </button>
+                </div>
+
+                {/* Lista Geral de Produtos */}
+                <div className="bg-[#121214] rounded-xl border border-zinc-800 shadow-md overflow-hidden" id="produtos-list-wrapper">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse" id="produtos-table">
+                      <thead>
+                        <tr className="bg-[#0A0A0B] text-zinc-400 text-xs uppercase tracking-wider border-b border-zinc-800">
+                          <th className="p-3.5 pl-4">Produto</th>
+                          <th className="p-3.5">Categoria</th>
+                          <th className="p-3.5 text-right">Preço de Custo</th>
+                          <th className="p-3.5 text-right">Preço de Venda</th>
+                          <th className="p-3.5 text-center">Lucro Estimado</th>
+                          <th className="p-3.5 text-center">Controle Estoque?</th>
+                          <th className="p-3.5 text-right">Quantidade</th>
+                          <th className="p-3.5 text-center pr-4">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800 text-sm">
+                        {produtos.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="p-8 text-center text-zinc-500 bg-[#121214]">
+                              Nenhum produto cadastrado. Clique em "Cadastrar Novo Produto" para iniciar.
+                            </td>
+                          </tr>
+                        ) : (
+                          produtos.map((p) => {
+                            const lucro = p.precoVenda - p.precoCusto;
+                            const margem = p.precoVenda > 0 ? (lucro / p.precoVenda) * 100 : 0;
+                            return (
+                              <tr key={p.id} className="hover:bg-[#1E1E22]/50 transition-colors" id={`row-produto-${p.id}`}>
+                                <td className="p-3.5 pl-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-zinc-100 block">{p.nome}</span>
+                                    {p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5) && (
+                                      <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[10px] font-bold" title={`Estoque atingiu ou está abaixo do mínimo de ${p.estoqueMinimo ?? 5} un.`}>
+                                        <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        Mínimo atingido
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] font-mono text-zinc-500">ID: {p.id}</span>
+                                </td>
+                                <td className="p-3.5 text-zinc-300">
+                                  <span className="text-xs bg-[#1E1E22] text-zinc-300 px-2 py-1 rounded-md font-medium border border-zinc-800">
+                                    {p.categoria}
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-right font-mono text-zinc-400">
+                                  R$ {p.precoCusto.toFixed(2)}
+                                </td>
+                                <td className="p-3.5 text-right font-mono font-bold text-amber-400">
+                                  R$ {p.precoVenda.toFixed(2)}
+                                </td>
+                                <td className="p-3.5 text-center">
+                                  <span className="text-xs text-emerald-400 font-semibold block">
+                                    + R$ {lucro.toFixed(2)}
+                                  </span>
+                                  <span className="text-[10px] text-zinc-500">
+                                    ({margem.toFixed(0)}%)
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-center">
+                                  {p.controlarEstoque ? (
+                                    <span className="inline-flex items-center gap-0.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+                                      Sim <Check className="w-3 h-3" />
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center text-xs text-zinc-500 bg-zinc-800/40 px-2 py-0.5 rounded">
+                                      Não
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3.5 text-right">
+                                  {p.controlarEstoque ? (
+                                    <div className="flex flex-col items-end">
+                                      <span className={`font-mono font-bold text-sm ${p.estoque <= 0 ? 'text-rose-400' : p.estoque <= (p.estoqueMinimo ?? 5) ? 'text-amber-500 font-extrabold' : 'text-zinc-200'}`}>
+                                        {p.estoque} un
+                                      </span>
+                                      <span className="text-[10px] text-zinc-500 font-semibold font-mono">
+                                        Mín: {p.estoqueMinimo ?? 5} un
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-zinc-500 text-xs italic" title="Estoque ilimitado, pois não controla estoque">
+                                      Livre ♾️
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3.5 text-center pr-4">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => abrirModalProduto(p)}
+                                      className="p-1.5 text-zinc-400 hover:text-zinc-100 bg-[#1E1E22] hover:bg-[#25252A] rounded-lg transition-colors cursor-pointer border border-zinc-800"
+                                      title="Editar"
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => deletarProduto(p.id)}
+                                      className="p-1.5 text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer border border-rose-500/10"
+                                      title="Excluir"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Caixa de Aviso Informativo do Mecanismo de Baixa */}
+                <div className="bg-[#121214] text-zinc-300 p-4 rounded-xl border border-zinc-800 text-xs flex gap-3 items-start" id="stock-info-card">
+                  <Package className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-amber-400 mb-1">💡 Como Funciona a Baixa Inteligente?</h4>
+                    <p className="leading-relaxed">
+                      • Itens como <strong className="text-zinc-100">Bebidas</strong> e <strong className="text-zinc-100">Sobremesas</strong> normalmente possuem a opção "Controlar Estoque?" ativa. O caixa debitará automaticamente o estoque ao finalizar a compra.<br />
+                      • Itens como <strong className="text-zinc-100">Almoço/Pratos</strong> preparados na hora não precisam de controle de estoque. O sistema permite realizar a venda sem registrar quantidade limite de estoque físico.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. TAB DE FECHAMENTO & RELATÓRIOS DO CAIXA */}
+            {activeTab === 'relatorios' && (
+              <div className="flex flex-col gap-5 animate-fadeIn" id="relatorios-tab-container">
+                {/* Resumo Financeiro Cards */}
+                {relatorio && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4" id="metrics-grid">
+                    <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-total-vendas">
+                      <div>
+                        <span className="text-xs font-bold text-zinc-400 uppercase">Faturamento de Hoje</span>
+                        <h3 className="text-2xl font-black text-amber-400 font-mono mt-1">
+                          R$ {relatorio.totalGeral.toFixed(2)}
+                        </h3>
+                      </div>
+                      <div className="p-3 bg-amber-500/10 text-amber-400 rounded-lg">
+                        <DollarSign className="w-6 h-6" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-qtd-vendas">
+                      <div>
+                        <span className="text-xs font-bold text-zinc-400 uppercase">Vendas Realizadas</span>
+                        <h3 className="text-2xl font-black text-zinc-100 font-mono mt-1">
+                          {relatorio.quantidadeVendas}
+                        </h3>
+                      </div>
+                      <div className="p-3 bg-zinc-800 text-zinc-400 rounded-lg">
+                        <Receipt className="w-6 h-6" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-ticket-medio">
+                      <div>
+                        <span className="text-xs font-bold text-zinc-400 uppercase">Ticket Médio</span>
+                        <h3 className="text-2xl font-black text-zinc-100 font-mono mt-1">
+                          R$ {relatorio.quantidadeVendas > 0 ? (relatorio.totalGeral / relatorio.quantidadeVendas).toFixed(2) : '0.00'}
+                        </h3>
+                      </div>
+                      <div className="p-3 bg-zinc-800 text-zinc-400 rounded-lg">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-lucro-bruto">
+                      <div>
+                        <span className="text-xs font-bold text-zinc-400 uppercase">Status do Caixa</span>
+                        <h3 className="text-base font-extrabold text-emerald-400 mt-1 flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4" /> Caixa Aberto
+                        </h3>
+                      </div>
+                      <div className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-xs font-bold">
+                        100% OK
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5" id="relatorios-details-grid">
+                  
+                  {/* DETALHAMENTO POR FORMAS DE PAGAMENTO */}
+                  <div className="lg:col-span-4 bg-[#121214] border border-zinc-800 rounded-xl p-4 shadow-md flex flex-col justify-between" id="payment-split-box">
+                    <div>
+                      <h3 className="font-bold text-zinc-100 text-sm mb-3 border-b border-zinc-800/60 pb-2">
+                        Total por Forma de Pagamento
+                      </h3>
+                      {relatorio && (
+                        <div className="flex flex-col gap-3">
+                          {[
+                            { label: 'Dinheiro', val: relatorio.porForma['Dinheiro'], color: 'bg-emerald-500' },
+                            { label: 'Cartão de Crédito', val: relatorio.porForma['Cartão de Crédito'], color: 'bg-sky-500' },
+                            { label: 'Cartão de Débito', val: relatorio.porForma['Cartão de Débito'], color: 'bg-blue-500' },
+                            { label: 'PIX', val: relatorio.porForma['PIX'], color: 'bg-teal-500' }
+                          ].map((forma, idx) => {
+                            const percent = relatorio.totalGeral > 0 ? (forma.val / relatorio.totalGeral) * 100 : 0;
+                            return (
+                              <div key={idx} className="flex flex-col gap-1">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="font-semibold text-zinc-300 flex items-center gap-1.5">
+                                    <span className={`w-2.5 h-2.5 rounded-full ${forma.color}`}></span>
+                                    {forma.label}
+                                  </span>
+                                  <span className="font-bold font-mono text-zinc-100">
+                                    R$ {forma.val.toFixed(2)} ({percent.toFixed(0)}%)
+                                  </span>
+                                </div>
+                                <div className="w-full bg-[#1E1E22] h-2 rounded-full overflow-hidden">
+                                  <div className={`h-full ${forma.color}`} style={{ width: `${percent}%` }}></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-6 p-3 bg-[#1A1A1D] border border-zinc-800/80 rounded-lg text-xs text-zinc-400 text-center">
+                      Os relatórios são atualizados em tempo real conforme as comandas são pagas e as vendas diretas registradas.
+                    </div>
+                  </div>
+
+                  {/* PRODUTOS MAIS VENDIDOS DE HOJE */}
+                  <div className="lg:col-span-4 bg-[#121214] border border-zinc-800 rounded-xl p-4 shadow-md" id="most-sold-box">
+                    <h3 className="font-bold text-zinc-100 text-sm mb-3 border-b border-zinc-800/60 pb-2">
+                      Top 5 Produtos Mais Vendidos Hoje
+                    </h3>
+                    {relatorio && relatorio.maisVendidos && relatorio.maisVendidos.length === 0 ? (
+                      <div className="text-center py-8 text-zinc-500 text-xs">
+                        Nenhum produto vendido hoje ainda.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        {relatorio?.maisVendidos?.map((item: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between p-2 bg-[#1E1E22] border border-zinc-800 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-[#121214] text-zinc-400 text-[10px] font-bold flex items-center justify-center border border-zinc-800">
+                                {idx + 1}
+                              </span>
+                              <span className="text-xs font-bold text-zinc-200 truncate max-w-[150px]">
+                                {item.nome}
+                              </span>
+                            </div>
+                            <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold border border-emerald-500/20">
+                              {item.quantidade} vendidos
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* HISTÓRICO DE VENDAS DO CAIXA */}
+                  <div className="lg:col-span-4 bg-[#121214] border border-zinc-800 rounded-xl p-4 shadow-md flex flex-col justify-between" id="recent-sales-history">
+                    <div>
+                      <h3 className="font-bold text-zinc-100 text-sm mb-3 border-b border-zinc-800/60 pb-2">
+                        Histórico de Cupons de Hoje
+                      </h3>
+                      {relatorio && relatorio.vendasDetalhadas && relatorio.vendasDetalhadas.length === 0 ? (
+                        <div className="text-center py-10 text-zinc-500 text-xs">
+                          Nenhum cupom gerado hoje.
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2 overflow-y-auto max-h-[220px] pr-1">
+                          {relatorio?.vendasDetalhadas?.slice().reverse().map((v: Venda) => (
+                            <div
+                              key={v.id}
+                              onClick={() => {
+                                  setVendaRecente(v);
+                                  setShowCupomModal(true);
+                                }}
+                              className="p-2.5 bg-[#1E1E22] hover:bg-[#25252A] border border-zinc-800 rounded-lg flex items-center justify-between cursor-pointer transition-colors"
+                              title="Clique para ver Detalhes do Cupom"
+                            >
+                              <div className="min-w-0 flex-1 pr-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-mono font-bold text-zinc-500">#{v.id}</span>
+                                  {v.comandaIdentificador && (
+                                    <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1 py-0.2 rounded font-bold">
+                                      {v.comandaIdentificador}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[11px] font-semibold text-zinc-400 block">
+                                  Forma: {v.formaPagamento}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-xs font-bold text-zinc-100 font-mono">
+                                  R$ {v.total.toFixed(2)}
+                                </span>
+                                <span className="text-[9px] text-zinc-500 block font-mono">
+                                  {new Date(v.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* 5. TAB DE CONFIGURAÇÕES DA EMPRESA */}
+            {activeTab === 'empresa' && (
+              <div className="flex flex-col lg:flex-row gap-6 animate-fadeIn" id="empresa-tab-container">
+                {/* Form de Cadastro */}
+                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-xl p-6 shadow-md" id="empresa-form-card">
+                  <div className="flex items-center gap-2.5 mb-6 border-b border-zinc-800/60 pb-3">
+                    <Store className="w-5 h-5 text-amber-400" />
+                    <div>
+                      <h3 className="font-bold text-zinc-100 text-base">Cadastro do Estabelecimento</h3>
+                      <p className="text-xs text-zinc-400">Configure as informações que serão impressas nos cupons de venda e comandas.</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={salvarEmpresaForm} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">Nome do Estabelecimento *</label>
+                        <input
+                          type="text"
+                          value={empresaFormNome}
+                          onChange={(e) => setEmpresaFormNome(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Ex: Pizzaria Bella Italia"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">CNPJ / CPF</label>
+                        <input
+                          type="text"
+                          value={empresaFormCnpj}
+                          onChange={(e) => setEmpresaFormCnpj(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Ex: 12.345.678/0001-99"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">Endereço Completo</label>
+                        <input
+                          type="text"
+                          value={empresaFormEndereco}
+                          onChange={(e) => setEmpresaFormEndereco(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Ex: Rua das Flores, 123 - Centro"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">Telefone / WhatsApp</label>
+                        <input
+                          type="text"
+                          value={empresaFormTelefone}
+                          onChange={(e) => setEmpresaFormTelefone(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Ex: (11) 98765-4321"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">Slogan ou Website (Mensagem de Rodapé)</label>
+                      <input
+                        type="text"
+                        value={empresaFormSlogan}
+                        onChange={(e) => setEmpresaFormSlogan(e.target.value)}
+                        className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                        placeholder="Ex: O melhor sabor da culinária brasileira"
+                      />
+                    </div>
+
+                    {/* Logo upload block */}
+                    <div className="border border-zinc-800 rounded-xl p-4 bg-[#1E1E22]/50">
+                      <label className="block text-xs font-bold text-zinc-300 mb-2 uppercase">Logomarca do Estabelecimento</label>
+                      
+                      <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className="w-20 h-20 bg-[#1E1E22] border border-zinc-800 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                          {empresaFormLogo ? (
+                            <img
+                              src={empresaFormLogo}
+                              alt="Logo Preview"
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Utensils className="w-8 h-8 text-zinc-600" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 w-full space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            <label className="flex items-center gap-2 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors px-3 py-2 rounded-lg cursor-pointer border border-zinc-700">
+                              <Upload className="w-3.5 h-3.5 text-amber-400" />
+                              Carregar Imagem (Max 2MB)
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleLogoUpload}
+                              />
+                            </label>
+                            
+                            {empresaFormLogo && (
+                              <button
+                                type="button"
+                                onClick={() => setEmpresaFormLogo('')}
+                                className="text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-3 py-2 rounded-lg cursor-pointer border border-rose-500/10 transition-colors"
+                              >
+                                Remover Logo
+                              </button>
+                            )}
+                          </div>
+                          
+                          <p className="text-[10px] text-zinc-500 leading-relaxed">
+                            Selecione um arquivo PNG ou JPG quadrado de até 2MB. A imagem será convertida para Base64 e salva localmente no banco de dados com segurança.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* URL Opcional */}
+                      <div className="mt-4 border-t border-zinc-800/80 pt-3">
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">Ou cole o link direto de uma imagem online:</label>
+                        <input
+                          type="url"
+                          value={empresaFormLogo}
+                          onChange={(e) => setEmpresaFormLogo(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Ex: https://meusite.com/images/logo.png"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-5 py-2.5 rounded-lg font-bold text-sm cursor-pointer shadow-md transition-colors"
+                      >
+                        <Check className="w-4 h-4" />
+                        Salvar Alterações
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Visualizador de Exemplo de Cupom Fiscal */}
+                <div className="w-full lg:w-[350px] bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col" id="preview-cupom-fiscal">
+                  <div className="text-xs font-bold text-zinc-400 uppercase mb-4 tracking-wider flex items-center gap-1.5 border-b border-zinc-800/60 pb-2">
+                    <Printer className="w-4 h-4 text-amber-500" />
+                    <span>Visualização Impressa</span>
+                  </div>
+
+                  <div className="bg-white text-zinc-900 rounded-lg p-5 font-mono text-xs shadow-inner select-none flex-1 flex flex-col justify-between min-h-[380px]" id="paper-preview">
+                    <div>
+                      {/* Logo header simulation */}
+                      <div className="flex flex-col items-center text-center mb-4 border-b border-dashed border-zinc-300 pb-4">
+                        {empresaFormLogo ? (
+                          <img
+                            src={empresaFormLogo}
+                            alt="Logo"
+                            referrerPolicy="no-referrer"
+                            className="w-12 h-12 object-cover rounded mb-2 border border-zinc-200"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 border border-dashed border-zinc-300 rounded flex items-center justify-center mb-2">
+                            <Utensils className="w-5 h-5 text-zinc-400" />
+                          </div>
+                        )}
+                        <h4 className="font-extrabold text-sm uppercase text-zinc-950">{empresaFormNome || 'SUA EMPRESA'}</h4>
+                        <p className="text-[10px] text-zinc-600 mt-0.5">CNPJ: {empresaFormCnpj || '00.000.000/0000-00'}</p>
+                        <p className="text-[9px] text-zinc-500 leading-normal max-w-[200px] mt-0.5 text-center">
+                          {empresaFormEndereco || 'Seu Endereço Completo'}
+                        </p>
+                        <p className="text-[9px] text-zinc-500 mt-0.5">Tel: {empresaFormTelefone || '(00) 00000-0000'}</p>
+                      </div>
+
+                      {/* Itens sample */}
+                      <div className="space-y-1 mb-4 text-zinc-800">
+                        <div className="flex justify-between font-bold text-[10px] text-zinc-500 uppercase border-b border-dashed border-zinc-200 pb-1 mb-1">
+                          <span>Item</span>
+                          <span>Total</span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span>1x Chopp Brahma 300ml</span>
+                          <span>R$ 9,90</span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span>1x Prato Feito de Frango</span>
+                          <span>R$ 23,90</span>
+                        </div>
+                      </div>
+
+                      {/* Totais sample */}
+                      <div className="border-t border-dashed border-zinc-300 pt-2 space-y-1">
+                        <div className="flex justify-between text-xs font-bold text-zinc-950">
+                          <span>SUBTOTAL:</span>
+                          <span>R$ 33,80</span>
+                        </div>
+                        <div className="flex justify-between text-[11px] text-zinc-600">
+                          <span>FORMA PAGTO:</span>
+                          <span>PIX</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Slogan footer simulation */}
+                    <div className="text-center border-t border-dashed border-zinc-300 pt-3 mt-4">
+                      <p className="text-[10px] font-bold italic text-zinc-700">
+                        "{empresaFormSlogan || 'O melhor sabor da culinária brasileira'}"
+                      </p>
+                      <p className="text-[8px] text-zinc-400 mt-1 uppercase font-semibold">Obrigado pela preferência!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 6. TAB DE CONFIGURAÇÕES DE IMPRESSORAS */}
+            {activeTab === 'impressoras' && (
+              <div className="flex flex-col lg:flex-row gap-6 animate-fadeIn" id="impressoras-tab-container">
+                {/* Form de Cadastro */}
+                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-xl p-6 shadow-md" id="impressoras-form-card">
+                  <div className="flex items-center gap-2.5 mb-6 border-b border-zinc-800/60 pb-3">
+                    <Printer className="w-5 h-5 text-amber-400" />
+                    <div>
+                      <h3 className="font-bold text-zinc-100 text-base">Impressoras Térmicas</h3>
+                      <p className="text-xs text-zinc-400">Configure as impressoras térmicas ESC/POS do estabelecimento para cozinha e caixa.</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={salvarPrinterConfigForm} className="space-y-4">
+                    
+                    {/* Impressora da Cozinha */}
+                    <div className="border border-zinc-800 rounded-xl p-4 bg-[#1E1E22]/30 space-y-3">
+                      <div className="flex items-center gap-2 text-zinc-200 border-b border-zinc-800 pb-1.5">
+                        <Utensils className="w-4 h-4 text-amber-500" />
+                        <h4 className="text-xs font-bold uppercase tracking-wide">Impressora de Preparo (Cozinha)</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Endereço IP / Hostname</label>
+                          <input
+                            type="text"
+                            value={printerFormCozinhaIp}
+                            onChange={(e) => setPrinterFormCozinhaIp(e.target.value)}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            placeholder="Ex: 192.168.1.100"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Porta TCP</label>
+                          <input
+                            type="number"
+                            value={printerFormCozinhaPorta}
+                            onChange={(e) => setPrinterFormCozinhaPorta(Number(e.target.value))}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            placeholder="Ex: 9100"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Impressora do Caixa */}
+                    <div className="border border-zinc-800 rounded-xl p-4 bg-[#1E1E22]/30 space-y-3">
+                      <div className="flex items-center gap-2 text-zinc-200 border-b border-zinc-800 pb-1.5">
+                        <DollarSign className="w-4 h-4 text-emerald-400" />
+                        <h4 className="text-xs font-bold uppercase tracking-wide">Impressora do Caixa (Cupons)</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Endereço IP / Hostname</label>
+                          <input
+                            type="text"
+                            value={printerFormCaixaIp}
+                            onChange={(e) => setPrinterFormCaixaIp(e.target.value)}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            placeholder="Ex: 192.168.1.200"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Porta TCP</label>
+                          <input
+                            type="number"
+                            value={printerFormCaixaPorta}
+                            onChange={(e) => setPrinterFormCaixaPorta(Number(e.target.value))}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            placeholder="Ex: 9100"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* API de Impressão Remota */}
+                    <div className="border border-zinc-800 rounded-xl p-4 bg-[#1E1E22]/50 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Cloud className="w-4 h-4 text-sky-400" />
+                          <div>
+                            <h4 className="text-xs font-bold uppercase tracking-wide text-zinc-200">API de Impressão Remota</h4>
+                            <p className="text-[10px] text-zinc-500">Encaminhar payloads de impressão diretamente para um servidor/ponte local.</p>
+                          </div>
+                        </div>
+                        
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={printerFormUsarApiRemota}
+                            onChange={(e) => setPrinterFormUsarApiRemota(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 peer-checked:after:bg-zinc-950"></div>
+                        </label>
+                      </div>
+
+                      {printerFormUsarApiRemota && (
+                        <div className="space-y-3 pt-2 border-t border-zinc-800 animate-slideDown">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">URL do Endereço API Remota</label>
+                              <input
+                                type="url"
+                                value={printerFormApiUrl}
+                                onChange={(e) => setPrinterFormApiUrl(e.target.value)}
+                                className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                                placeholder="Ex: https://meuservidor.com/api/print"
+                                required={printerFormUsarApiRemota}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Token / Chave de API (Opcional)</label>
+                              <input
+                                type="password"
+                                value={printerFormApiToken}
+                                onChange={(e) => setPrinterFormApiToken(e.target.value)}
+                                className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                                placeholder="Ex: Bearer Token de Acesso"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Formato do Payload / Protocolo</label>
+                            <select
+                              value={printerFormTipoImpressora}
+                              onChange={(e) => setPrinterFormTipoImpressora(e.target.value as any)}
+                              className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors cursor-pointer"
+                            >
+                              <option value="escpos">ESC/POS (Instruções binárias completas para impressoras térmicas)</option>
+                              <option value="raw">Raw Plain Text (Texto corrido com separadores de papel tracejados)</option>
+                              <option value="json">JSON Estruturado (Envio de metadados completos do pedido e itens)</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-5 py-2.5 rounded-lg font-bold text-sm cursor-pointer shadow-md transition-colors"
+                      >
+                        <Check className="w-4 h-4" />
+                        Salvar Configurações
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Painel de Explicações Técnicas */}
+                <div className="w-full lg:w-[380px] bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-4" id="impressoras-info-panel">
+                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800/60 pb-2">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span>Como funciona a Impressão?</span>
+                  </div>
+
+                  <div className="space-y-4 text-xs text-zinc-300 leading-relaxed">
+                    <p>
+                      Como este PDV está rodando em um servidor de nuvem seguro (Cloud Run), ele não consegue acessar diretamente os IPs locais privados (ex: <code className="font-mono bg-zinc-800 px-1 text-amber-400 rounded">192.168.x.x</code>) instalados na sua rede local interna.
+                    </p>
+
+                    <div className="p-3.5 bg-zinc-950 rounded-lg border border-zinc-800 space-y-2">
+                      <h4 className="font-bold text-zinc-100 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                        Opção 1: Ponte API Remota
+                      </h4>
+                      <p className="text-[11px] text-zinc-400">
+                        Ative a <strong>API de Impressão Remota</strong> para redirecionar os comandos para um servidor público ou bridge local (como PrintNode ou um pequeno script Python rodando no seu estabelecimento) que retransmite o cupom via HTTP para as impressoras locais.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 bg-zinc-950 rounded-lg border border-zinc-800 space-y-2">
+                      <h4 className="font-bold text-zinc-100 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                        Opção 2: Conexão Direta Simulada
+                      </h4>
+                      <p className="text-[11px] text-zinc-400">
+                        Se a API estiver desativada, o backend disparará simulações de pacotes de dados TCP para os IPs de rede privada cadastrados e disponibilizará o download do cupom formatado para testes de integração local.
+                      </p>
+                    </div>
+
+                    {/* Botão de Teste Rápido */}
+                    <div className="border-t border-zinc-800/80 pt-4 mt-2">
+                      <h4 className="font-bold text-zinc-200 mb-2.5">Auto-Teste de Conectividade</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAbrirSimuladorImpressao(
+                            'cozinha',
+                            'Mesa Teste #1',
+                            [
+                              { nome: 'Prato Feito de Frango', quantidade: 1 },
+                              { nome: 'Coca-Cola Lata', quantidade: 2 }
+                            ],
+                            new Date().toISOString()
+                          )}
+                          className="flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer border border-zinc-700 transition-colors"
+                        >
+                          <Utensils className="w-3.5 h-3.5 text-amber-500" />
+                          Testar Cozinha
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAbrirSimuladorImpressao(
+                            'cupom',
+                            'Caixa Teste #1',
+                            [
+                              { nome: 'Feijoada Individual', quantidade: 1, precoVenda: 35.90 },
+                              { nome: 'Chopp Brahma 300ml', quantidade: 1, precoVenda: 9.90 }
+                            ],
+                            new Date().toISOString()
+                          )}
+                          className="flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer border border-zinc-700 transition-colors"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                          Testar Caixa
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* FOOTER */}
+      <footer className="bg-[#0A0A0B] text-zinc-500 py-6 border-t border-zinc-800 text-center text-xs mt-auto" id="app-footer">
+        <p className="font-medium text-zinc-400 mb-1">© {new Date().getFullYear()} Sabor Gourmet PDV - Controle Integrado para Bares e Restaurantes</p>
+        <p className="max-w-md mx-auto leading-relaxed text-zinc-500 px-4">
+          Desenvolvido com Node.js no backend e React no frontend. Equipado com controle automático de estoque e fechamento de caixa por formas de pagamento.
+        </p>
+      </footer>
+
+      {/* MODAL 1: ABRIR NOVA COMANDA */}
+      {showNovaComandaModal && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn" id="nova-comanda-modal">
+          <div className="bg-[#121214] rounded-xl shadow-2xl border border-zinc-800 w-full max-w-md overflow-hidden">
+            <div className="bg-[#0A0A0B] p-4 text-zinc-100 flex justify-between items-center border-b border-zinc-800">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-amber-500" />
+                Abrir Nova Comanda / Mesa
+              </h3>
+              <button
+                onClick={() => setShowNovaComandaModal(false)}
+                className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={criarNovaComanda} className="p-5 flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold text-zinc-400 block mb-1.5">
+                  Número da Mesa ou Nome do Cliente:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Mesa 12 ou 'Carlos Balcão'"
+                  value={novaComandaIdentificador}
+                  onChange={(e) => setNovaComandaIdentificador(e.target.value)}
+                  className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden rounded-lg px-3 py-2 text-sm text-zinc-100 font-medium"
+                  id="comanda-identificador-input"
+                  autoFocus
+                />
+              </div>
+
+              <div className="bg-[#1E1E22] p-3 rounded-lg border border-zinc-800 text-xs text-zinc-400 leading-relaxed">
+                Ao criar uma comanda, você poderá incluir produtos gradativamente a ela, salvando-os no servidor, para apenas fechá-la e cobrar quando o cliente desejar ir embora.
+              </div>
+
+              <div className="flex gap-2 justify-end mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNovaComandaModal(false)}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold px-4 py-2 rounded-lg cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-4 py-2 rounded-lg cursor-pointer"
+                >
+                  Confirmar Abertura
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: CADASTRAR OU EDITAR PRODUTO */}
+      {showProdutoModal && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn" id="cadastro-produto-modal">
+          <div className="bg-[#121214] rounded-xl shadow-2xl border border-zinc-800 w-full max-w-lg overflow-hidden">
+            <div className="bg-[#0A0A0B] p-4 text-zinc-100 flex justify-between items-center border-b border-zinc-800">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <Package className="w-5 h-5 text-amber-500" />
+                {produtoEmEdicao ? 'Editar Produto' : 'Cadastrar Novo Produto'}
+              </h3>
+              <button
+                onClick={() => setShowProdutoModal(false)}
+                className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={salvarProdutoForm} className="p-5 flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="text-xs font-bold text-zinc-400 block mb-1">Nome do Produto:</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Coca-Cola Lata 350ml ou Parmegiana de Carne"
+                    value={prodFormNome}
+                    onChange={(e) => setProdFormNome(e.target.value)}
+                    className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden rounded-lg px-3 py-2 text-sm text-zinc-100 font-medium"
+                    id="form-prod-nome"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-zinc-400 block mb-1">Categoria:</label>
+                  <select
+                    value={prodFormCategoria}
+                    onChange={(e) => setProdFormCategoria(e.target.value)}
+                    className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden rounded-lg px-3 py-2 text-sm text-zinc-100"
+                    id="form-prod-categoria"
+                  >
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Almoço/Pratos">Almoço/Pratos</option>
+                    <option value="Sobremesas">Sobremesas</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-zinc-400 block mb-1">Controlar Estoque?</label>
+                  <div className="flex gap-4 py-2">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="controlarEstoque"
+                        checked={prodFormControlarEstoque}
+                        onChange={() => setProdFormControlarEstoque(true)}
+                        className="accent-amber-500"
+                      />
+                      Sim (ex: Bebida)
+                    </label>
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="controlarEstoque"
+                        checked={!prodFormControlarEstoque}
+                        onChange={() => setProdFormControlarEstoque(false)}
+                        className="accent-amber-500"
+                      />
+                      Não (ex: Almoço)
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-zinc-400 block mb-1">Preço de Custo (R$):</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={prodFormPrecoCusto}
+                    onChange={(e) => setProdFormPrecoCusto(Number(e.target.value))}
+                    className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden rounded-lg px-3 py-2 text-sm text-zinc-100 font-mono"
+                    id="form-prod-custo"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-zinc-400 block mb-1">Preço de Venda (R$):</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="0.00"
+                    value={prodFormPrecoVenda}
+                    onChange={(e) => setProdFormPrecoVenda(Number(e.target.value))}
+                    className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden rounded-lg px-3 py-2 text-sm text-amber-400 font-mono font-bold"
+                    id="form-prod-venda"
+                  />
+                </div>
+
+                 {prodFormControlarEstoque && (
+                  <div className="col-span-2 animate-fadeIn bg-amber-500/5 p-3 rounded-lg border border-amber-500/10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-zinc-400 block mb-1">Quantidade em Estoque:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          required={prodFormControlarEstoque}
+                          value={prodFormEstoque}
+                          onChange={(e) => setProdFormEstoque(Number(e.target.value))}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden rounded-lg px-3 py-2 text-sm text-zinc-100 font-mono"
+                          id="form-prod-estoque"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-zinc-400 block mb-1">Estoque Mínimo de Alerta:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          required={prodFormControlarEstoque}
+                          value={prodFormEstoqueMinimo}
+                          onChange={(e) => setProdFormEstoqueMinimo(Number(e.target.value))}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden rounded-lg px-3 py-2 text-sm text-zinc-100 font-mono"
+                          id="form-prod-estoque-minimo"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 mt-2">Este estoque diminuirá a cada venda concluída. Um ícone de alerta aparecerá se o estoque atingir ou for menor que o limite mínimo.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2 justify-end mt-4 pt-4 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setShowProdutoModal(false)}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold px-4 py-2.5 rounded-lg cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-5 py-2.5 rounded-lg cursor-pointer"
+                >
+                  Salvar Produto
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: CUPOM FISCAL DE VENDA BEM-SUCEDIDA */}
+      {showCupomModal && vendaRecente && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn" id="cupom-fiscal-modal">
+          <div className="bg-[#121214] rounded-xl shadow-2xl w-full max-w-sm overflow-hidden border border-zinc-800 flex flex-col">
+            
+            {/* Header Cupom */}
+            <div className="bg-[#0A0A0B] border-b border-zinc-800 p-4 text-center">
+              <CheckCircle className="w-10 h-10 mx-auto text-amber-500 mb-1" />
+              <h3 className="font-extrabold text-base text-zinc-100">Venda Concluída!</h3>
+              <p className="text-xs text-zinc-400">Cupom Fiscal de Venda Nº {vendaRecente.id}</p>
+            </div>
+
+            {/* Corpo do Cupom (Efeito de Papel Impresso) */}
+            <div className="p-5 font-mono text-xs text-zinc-300 bg-[#1A1A1D] border-x border-b border-zinc-850 flex-1 flex flex-col gap-3 leading-snug">
+              <div className="text-center border-b border-dashed border-zinc-800 pb-2">
+                {empresa.logo && (
+                  <img
+                    src={empresa.logo}
+                    alt="Logo"
+                    referrerPolicy="no-referrer"
+                    className="w-10 h-10 mx-auto object-cover rounded mb-1.5"
+                  />
+                )}
+                <p className="font-bold text-zinc-100 text-sm uppercase">{empresa.nome || 'SABOR GOURMET'}</p>
+                {empresa.cnpj && <p className="text-[10px] text-zinc-400">CNPJ: {empresa.cnpj}</p>}
+                {empresa.endereco && <p className="text-[10px] text-zinc-400">{empresa.endereco}</p>}
+                {empresa.telefone && <p className="text-[10px] text-zinc-400">Tel: {empresa.telefone}</p>}
+                <p className="text-zinc-400 mt-1">Data: {new Date(vendaRecente.data).toLocaleString('pt-BR')}</p>
+                {vendaRecente.comandaIdentificador && (
+                  <p className="font-bold text-amber-400 mt-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 inline-block rounded">
+                    Fechamento de: {vendaRecente.comandaIdentificador}
+                  </p>
+                )}
+              </div>
+
+              {/* Itens do Cupom */}
+              <div className="border-b border-dashed border-zinc-800 pb-2 flex flex-col gap-1.5">
+                <div className="flex justify-between font-bold text-zinc-400 mb-1 text-[10px]">
+                  <span>DESCRIÇÃO DOS ITENS</span>
+                  <span>TOTAL (R$)</span>
+                </div>
+                {vendaRecente.itens.map((item, i) => (
+                  <div key={i} className="flex justify-between items-start">
+                    <span className="pr-2 truncate max-w-[180px] text-zinc-300">
+                      {item.quantidade}x {item.nome}
+                    </span>
+                    <span className="text-zinc-100">{(item.precoVenda * item.quantidade).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Totais do Cupom */}
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between font-extrabold text-amber-400 text-sm">
+                  <span>TOTAL RECOLHIDO:</span>
+                  <span>R$ {vendaRecente.total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-zinc-400 text-[11px] mt-1">
+                  <span>Forma de Pagamento:</span>
+                  <span className="font-bold text-zinc-200">{vendaRecente.formaPagamento}</span>
+                </div>
+                <div className="flex justify-between text-zinc-400 text-[11px]">
+                  <span>Operação:</span>
+                  <span className="text-zinc-200">Caixa Principal</span>
+                </div>
+              </div>
+
+              <div className="text-center border-t border-dashed border-zinc-800 pt-3 mt-2">
+                {empresa.slogan && (
+                  <p className="text-[10px] font-bold italic text-zinc-400 mb-1">"{empresa.slogan}"</p>
+                )}
+                <p className="font-bold text-zinc-500 uppercase tracking-widest text-[9px]">Obrigado pela preferência!</p>
+              </div>
+            </div>
+
+            {/* Rodapé Cupom */}
+            <div className="p-3 bg-[#0A0A0B] border-t border-zinc-800 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => handleAbrirSimuladorImpressao('cupom', vendaRecente.comandaIdentificador || `Venda Direta Nº ${vendaRecente.id}`, vendaRecente.itens, vendaRecente.data, vendaRecente.id)}
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 text-xs font-bold px-3.5 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors"
+                id="btn-imprimir-cupom"
+              >
+                <Printer className="w-3.5 h-3.5 text-amber-500" />
+                Imprimir Pedido
+              </button>
+              <button
+                onClick={() => setShowCupomModal(false)}
+                className="bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-4 py-2 rounded-lg cursor-pointer"
+                id="btn-fechar-cupom"
+              >
+                Concluir & Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: SIMULADOR DE IMPRESSÃO DE PEDIDO */}
+      {showImpressaoModal && dadosImpressao && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/85 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn" id="simulador-impressao-modal">
+          <div className="bg-[#121214] rounded-xl shadow-2xl border border-zinc-800 w-full max-w-2xl overflow-hidden flex flex-col md:flex-row">
+            
+            {/* LADO ESQUERDO: CONFIGURAÇÕES E OPÇÕES DE IMPRESSÃO */}
+            <div className="p-5 md:w-1/2 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-zinc-800">
+              <div className="flex items-center gap-2 text-zinc-100">
+                <Printer className="w-5 h-5 text-amber-500" />
+                <div>
+                  <h3 className="font-bold text-sm">Opções de Impressão</h3>
+                  <p className="text-[10px] text-zinc-500 font-medium">Configure antes de enviar ao preparo</p>
+                </div>
+              </div>
+
+              {/* Roteamento de Impressão */}
+              {dadosImpressao.tipo === 'cozinha' && (
+                <div>
+                  <label className="text-xs font-bold text-zinc-400 block mb-1.5">Enviar preparo para:</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['cozinha', 'copa', 'ambas'] as const).map((dest) => (
+                      <button
+                        key={dest}
+                        type="button"
+                        onClick={() => setDestinoImpressao(dest)}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all cursor-pointer text-center ${
+                          destinoImpressao === dest
+                            ? 'bg-amber-500 text-zinc-950 border-amber-500'
+                            : 'bg-[#1E1E22] text-zinc-300 border-zinc-800 hover:bg-[#25252A]'
+                        }`}
+                      >
+                        {dest === 'cozinha' ? 'Cozinha 🍳' : dest === 'copa' ? 'Copa/Bar 🍹' : 'Ambos 🍕'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Observação extra para a cozinha */}
+              {dadosImpressao.tipo === 'cozinha' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="flex items-center gap-2 text-xs font-medium text-zinc-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={incluirObservacao}
+                      onChange={(e) => setIncluirObservacao(e.target.checked)}
+                      className="accent-amber-500 rounded border-zinc-700"
+                    />
+                    <span>Incluir observação/aviso urgente?</span>
+                  </label>
+                  {incluirObservacao && (
+                    <textarea
+                      placeholder="Ex: Sem cebola, caprichar no molho..."
+                      value={observacaoTexto}
+                      onChange={(e) => setObservacaoTexto(e.target.value)}
+                      maxLength={120}
+                      className="w-full bg-[#1E1E22] border border-zinc-800 focus:border-amber-500/50 focus:outline-hidden rounded-lg px-3 py-2 text-xs text-zinc-100 h-20 resize-none font-medium"
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Opcional: Baixar arquivo TXT simulando spooler físico */}
+              <div className="bg-[#1E1E22] p-3 rounded-lg border border-zinc-800/80 flex flex-col gap-2">
+                <label className="flex items-start gap-2.5 text-xs text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={gerarArquivoTxt}
+                    onChange={(e) => setGerarArquivoTxt(e.target.checked)}
+                    className="accent-amber-500 mt-0.5 rounded border-zinc-700 shrink-0"
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-bold">Gerar arquivo físico (.txt)</span>
+                    <span className="text-[10px] text-zinc-500 leading-normal">Simula o spooler de impressão de arquivos físicos de balcão e cozinha para integradores.</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="mt-auto pt-4 border-t border-zinc-800 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowImpressaoModal(false)}
+                  disabled={isSimulandoImpressao}
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold py-2.5 rounded-lg cursor-pointer transition-colors disabled:opacity-50"
+                >
+                  Não Imprimir / Sair
+                </button>
+                <button
+                  type="button"
+                  onClick={executarImpressaoSimulada}
+                  disabled={isSimulandoImpressao}
+                  className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:bg-amber-500/50 disabled:text-zinc-950/50 text-zinc-950 text-xs font-extrabold py-2.5 rounded-lg cursor-pointer transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
+                >
+                  {isSimulandoImpressao ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Imprimindo...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Confirmar Impressão
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* LADO DIREITO: PREVISÃO INTERATIVA DO BILHETE (TERMO-COPIA) */}
+            <div className="p-5 md:w-1/2 bg-[#0A0A0B] flex flex-col items-center justify-center min-h-[350px]">
+              <span className="text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">Previsão do Bilhete Térmico</span>
+              
+              {/* Bilhete térmico físico simulado */}
+              <div className="w-full max-w-[280px] bg-white text-zinc-900 p-5 font-mono text-[11px] shadow-2xl relative border-t-4 border-dashed border-zinc-400 rounded-b-md select-none">
+                
+                {/* Efeito de rasgo de papel superior */}
+                <div className="absolute top-0 left-0 right-0 h-1 flex justify-between overflow-hidden -mt-1.5">
+                  {Array.from({ length: 15 }).map((_, i) => (
+                    <div key={i} className="w-3 h-3 bg-[#0A0A0B] rotate-45 transform origin-top-left shrink-0"></div>
+                  ))}
+                </div>
+
+                <div className="text-center border-b border-dashed border-zinc-400 pb-2 mb-2 leading-tight">
+                  {empresa.logo && (
+                    <img
+                      src={empresa.logo}
+                      alt="Logo"
+                      referrerPolicy="no-referrer"
+                      className="w-8 h-8 mx-auto object-cover rounded mb-1 border border-zinc-200"
+                    />
+                  )}
+                  <p className="font-extrabold text-xs uppercase">{empresa.nome || 'SABOR GOURMET'}</p>
+                  <p className="text-[10px] text-zinc-600">** PREPARO DE PRODUTO **</p>
+                  <p className="text-[10px] mt-1 text-zinc-500">Impressora: {destinoImpressao.toUpperCase()}</p>
+                </div>
+
+                <div className="flex flex-col gap-1.5 leading-snug">
+                  <div className="flex justify-between font-bold border-b border-dashed border-zinc-300 pb-1 mb-1 text-[10px]">
+                    <span>DESCRIÇÃO</span>
+                    <span>QTD</span>
+                  </div>
+                  {dadosImpressao.itens.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-start">
+                      <span className="pr-1 font-bold text-left break-all">{item.nome}</span>
+                      <span className="font-bold shrink-0">{item.quantidade}x</span>
+                    </div>
+                  ))}
+                </div>
+
+                {incluirObservacao && observacaoTexto.trim() && (
+                  <div className="mt-3 pt-2 border-t-2 border-dashed border-rose-400 text-rose-700 bg-rose-50 p-1.5 rounded text-[10px] leading-relaxed">
+                    <span className="font-bold block">⚠️ OBSERVAÇÃO DE PREPARO:</span>
+                    {observacaoTexto.trim()}
+                  </div>
+                )}
+
+                <div className="mt-4 pt-2 border-t border-dashed border-zinc-400 text-center text-[9px] text-zinc-500 leading-tight">
+                  <p className="font-bold">Identificador: {dadosImpressao.identificador}</p>
+                  <p className="mt-0.5">Ref: {dadosImpressao.idReferencia ? `#${dadosImpressao.idReferencia}` : 'Sem ID'}</p>
+                  <p className="text-[8px] mt-1">{new Date(dadosImpressao.data).toLocaleString('pt-BR')}</p>
+                </div>
+
+                {/* Efeito de rasgo de papel inferior */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 flex justify-between overflow-hidden mt-1 mb-[-4px]">
+                  {Array.from({ length: 15 }).map((_, i) => (
+                    <div key={i} className="w-3.5 h-3.5 bg-[#0A0A0B] rotate-45 transform origin-bottom-left shrink-0"></div>
+                  ))}
+                </div>
+
+              </div>
+              
+              <p className="text-[10px] text-zinc-500 mt-3 text-center max-w-xs leading-relaxed">
+                Você pode simular e gerar o arquivo de texto opcionalmente clicando em <strong>Confirmar Impressão</strong>.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
