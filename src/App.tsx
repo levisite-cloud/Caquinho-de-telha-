@@ -1429,17 +1429,29 @@ export default function App() {
                           })}
                         </div>
                         {formaPagamento === 'Cartão de Crédito' && (
-                          <div className="mt-3 bg-[#1A1A1D] p-2 rounded-lg border border-zinc-800 animate-fadeIn">
-                            <label className="text-[10px] text-zinc-400 font-bold block mb-1 uppercase tracking-wider">Número de Parcelas</label>
-                            <select
-                              value={parcelasCredito}
-                              onChange={(e) => setParcelasCredito(Number(e.target.value))}
-                              className="w-full bg-[#121214] text-amber-400 text-xs font-bold border border-zinc-700 focus:border-amber-500 rounded p-1.5 focus:outline-hidden"
-                            >
+                          <div className="mt-3 bg-[#1A1A1D] p-2 rounded-lg border border-zinc-800">
+                            <label className="text-[10px] text-zinc-400 font-bold block mb-2 uppercase tracking-wider text-center">Selecione as Parcelas</label>
+                            <div className="grid grid-cols-3 gap-1.5">
                               {[1, 2, 3, 4, 5, 6].map(p => (
-                                <option key={p} value={p}>{p}x {p === 1 ? ' (À vista)' : ` de R$ ${(totalCarrinho / p).toFixed(2)}`}</option>
+                                <button
+                                  key={p}
+                                  type="button"
+                                  onClick={() => setParcelasCredito(p)}
+                                  className={`py-1.5 px-1 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
+                                    parcelasCredito === p
+                                      ? 'bg-amber-500 text-zinc-950 border-amber-500'
+                                      : 'bg-[#121214] text-amber-400 border-zinc-700 hover:border-amber-500/50'
+                                  }`}
+                                >
+                                  {p}x {p === 1 ? '(À vista)' : ''}
+                                </button>
                               ))}
-                            </select>
+                            </div>
+                            {parcelasCredito > 1 && (
+                              <p className="text-[10px] text-zinc-400 text-center mt-2 font-mono">
+                                {parcelasCredito} parcelas de <strong className="text-amber-400">R$ {(totalCarrinho / parcelasCredito).toFixed(2)}</strong>
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
