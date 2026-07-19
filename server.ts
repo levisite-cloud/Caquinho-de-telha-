@@ -649,6 +649,21 @@ app.post('/api/licenca/ativar', async (req, res) => {
       return res.status(400).json({ error: 'Esta licença já foi utilizada.' });
     }
 
+    // Buscar o CNPJ/CPF cadastrado no sistema local
+    const { data: configEmpresa } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
+    let cnpjSistema = '';
+    if (configEmpresa && configEmpresa.empresa && configEmpresa.empresa.cnpj) {
+      cnpjSistema = configEmpresa.empresa.cnpj.replace(/\D/g, ''); // Apenas números
+    }
+
+    const cnpjLicenca = licenca.cpf_cnpj.replace(/\D/g, ''); // Apenas números
+    
+    // Se o sistema tiver um CNPJ cadastrado, deve bater com o da licença.
+    // Se não tiver CNPJ cadastrado no sistema (novo), aceitamos a primeira licença e confiamos no dono.
+    if (cnpjSistema && cnpjSistema !== cnpjLicenca) {
+      return res.status(403).json({ error: 'O CPF/CNPJ desta licença não corresponde ao CNPJ cadastrado no sistema.' });
+    }
+
     // Calcular nova data de validade
     let dataAtual = new Date();
     // Se o sistema já tinha uma validade no futuro, adiciona os dias nela. Se não, adiciona a partir de hoje.
