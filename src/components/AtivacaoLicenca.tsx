@@ -54,12 +54,13 @@ export function AtivacaoLicenca({ onSuccess, validadeAtual }: AtivacaoLicencaPro
             <ShieldAlert size={48} className="text-red-500" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Sistema Bloqueado</h1>
-          <p className="text-gray-400 text-sm">
-            Sua licença de uso expirou. Para continuar usando o PDV, por favor insira um novo código de ativação.
+          <p className="text-gray-400 text-sm leading-relaxed">
+            Até o momento não foi registrado o pagamento do sistema. Devido a isso o sistema está bloqueado.<br/>
+            Entre em contato com o administrador pelo número <strong>71 98270-4380</strong>.
           </p>
           {validadeAtual && (
             <p className="text-gray-500 text-xs mt-2">
-              Expirado em: {new Date(validadeAtual).toLocaleDateString('pt-BR')}
+              Vencimento original: {new Date(validadeAtual).toLocaleDateString('pt-BR')}
             </p>
           )}
         </div>
@@ -74,7 +75,7 @@ export function AtivacaoLicenca({ onSuccess, validadeAtual }: AtivacaoLicencaPro
           <form onSubmit={handleAtivar} className="space-y-4">
             <div>
               <label className="block text-gray-400 text-sm font-medium mb-1">
-                Código da Licença
+                Código da Licença de Desbloqueio
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -104,18 +105,18 @@ export function AtivacaoLicenca({ onSuccess, validadeAtual }: AtivacaoLicencaPro
                 loading ? 'bg-red-600/50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
               }`}
             >
-              {loading ? 'Validando...' : 'Ativar Sistema'}
+              {loading ? 'Validando...' : 'Liberar Sistema'}
             </button>
 
             <div className="pt-4 mt-4 border-t border-gray-700 text-center">
-              <p className="text-gray-400 text-sm mb-3">Não possui um código?</p>
+              <p className="text-gray-400 text-sm mb-3">Falar com o Administrador</p>
               <a
-                href={`https://wa.me/5511999999999?text=Olá!%20Minha%20licença%20do%20PDV%20expirou.%20Gostaria%20de%20renovar.`}
+                href={`https://wa.me/5571982704380?text=Olá!%20Minha%20licença%20do%20PDV%20expirou.%20Gostaria%20de%20regularizar%20o%20pagamento.`}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-lg text-white font-medium bg-green-600 hover:bg-green-700 transition-colors"
               >
-                Solicitar via WhatsApp
+                Chamar no WhatsApp
               </a>
             </div>
           </form>
