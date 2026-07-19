@@ -1,20 +1,25 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './src/types';
+
+// Carregar configuração do Firebase a partir do arquivo
+const firebaseConfigRaw = fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8');
+const firebaseConfig = JSON.parse(firebaseConfigRaw);
+
+// Inicializar Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 
 // Porta padrão exigida pela infraestrutura
 const PORT = 3000;
 
-// Interface para o banco de dados leve baseado em memória
-interface DatabaseSchema {
-  produtos: Produto[];
-  comandas: Comanda[];
-  vendas: Venda[];
-  empresa: Empresa;
-  printerConfig?: PrinterConfig;
-}
+export const app = express();
+app.use(express.json());
 
+// === DEFAULT VALUES ===
 const defaultEmpresa: Empresa = {
   nome: 'Sabor Gourmet',
   cnpj: '12.345.678/0001-99',
@@ -35,101 +40,34 @@ const defaultPrinterConfig: PrinterConfig = {
   tipoImpressora: 'escpos'
 };
 
-// In-memory cache for ultra-fast, zero-latency synchronous reads
-let dbMemoryCache: DatabaseSchema | null = null;
+// === ROTAS DA API ===
 
-// Carrega o banco de dados inicial (chamado uma vez no startup do servidor)
-async function initializeDb() {
-  const defaultDb: DatabaseSchema = {
-    produtos: [
-      { id: '1', nome: 'Chopp Brahma 300ml', categoria: 'Bebidas', precoCusto: 3.50, precoVenda: 9.90, estoque: 150, controlarEstoque: true },
-      { id: '2', nome: 'Coca-Cola Lata 350ml', categoria: 'Bebidas', precoCusto: 1.80, precoVenda: 6.00, estoque: 85, controlarEstoque: true },
-      { id: '3', nome: 'Prato Feito de Frango', categoria: 'Almoço/Pratos', precoCusto: 10.00, precoVenda: 23.90, estoque: 0, controlarEstoque: false },
-      { id: '4', nome: 'Feijoada Completa (Individual)', categoria: 'Almoço/Pratos', precoCusto: 16.50, precoVenda: 35.90, estoque: 0, controlarEstoque: false },
-      { id: '5', nome: 'Pudim de Leite Condensado', categoria: 'Sobremesas', precoCusto: 2.20, precoVenda: 8.00, estoque: 20, controlarEstoque: true },
-      { id: '6', nome: 'Água Mineral sem Gás 500ml', categoria: 'Bebidas', precoCusto: 1.00, precoVenda: 4.00, estoque: 100, controlarEstoque: true },
-      { id: '7', nome: 'Executivo de Alcatra Grelhada', categoria: 'Almoço/Pratos', precoCusto: 19.00, precoVenda: 39.90, estoque: 0, controlarEstoque: false },
-      { id: '8', nome: 'Mousse de Maracujá', categoria: 'Sobremesas', precoCusto: 2.50, precoVenda: 9.00, estoque: 12, controlarEstoque: true }
-    ],
-    comandas: [
-      {
-        id: 'c1',
-        identificador: 'Mesa 3',
-        ativa: true,
-        itens: [
-          { produtoId: '1', nome: 'Chopp Brahma 300ml', quantidade: 3, precoVenda: 9.90 },
-          { produtoId: '4', nome: 'Feijoada Completa (Individual)', quantidade: 1, precoVenda: 35.90 }
-        ],
-        dataAbertura: new Date().toISOString()
-      },
-      {
-        id: 'c2',
-        identificador: 'Comanda 42 (Bruno)',
-        ativa: true,
-        itens: [
-          { produtoId: '2', nome: 'Coca-Cola Lata 350ml', quantidade: 1, precoVenda: 6.00 },
-          { produtoId: '3', nome: 'Prato Feito de Frango', quantidade: 1, precoVenda: 23.90 }
-        ],
-        dataAbertura: new Date().toISOString()
-      }
-    ],
-    vendas: [],
-    empresa: defaultEmpresa,
-    printerConfig: defaultPrinterConfig
-  };
+// 1. GESTÃO DE PRODUTOS
 
-  dbMemoryCache = defaultDb;
-  console.log('[Database] Banco de dados in-memory inicializado com sucesso!');
-}
-
-// Retorna de forma síncrona o cache de memória atual para os endpoints
-function loadDb(): DatabaseSchema {
-  if (!dbMemoryCache) {
-    dbMemoryCache = {
-      produtos: [],
-      comandas: [],
-      vendas: [],
-      empresa: defaultEmpresa,
-      printerConfig: defaultPrinterConfig
-    };
+// Listar produtos
+app.get('/api/produtos', async (req, res) => {
+  try {
+    const produtosSnapshot = await getDocs(collection(db, 'produtos'));
+    const produtos = produtosSnapshot.docs.map(doc => doc.data() as Produto);
+    res.json(produtos);
+  } catch (error) {
+    console.error('Erro ao listar produtos:', error);
+    res.status(500).json({ error: 'Erro ao buscar produtos' });
   }
-  return dbMemoryCache!;
-}
-
-// Salva de forma imediata na memória
-function saveDb(data: DatabaseSchema) {
-  dbMemoryCache = data;
-}
-
-// Inicializa o banco de dados carregando na memória
-initializeDb().catch(err => {
-  console.error('[Database] Erro ao carregar banco de dados inicial:', err);
 });
 
-export const app = express();
-app.use(express.json());
-
-  // === ROTAS DA API ===
-
-  // 1. GESTÃO DE PRODUTOS
-
-  // Listar produtos
-  app.get('/api/produtos', (req, res) => {
-    const db = loadDb();
-    res.json(db.produtos);
-  });
-
-  // Criar produto
-  app.post('/api/produtos', (req, res) => {
-    const db = loadDb();
+// Criar produto
+app.post('/api/produtos', async (req, res) => {
+  try {
     const { nome, categoria, precoCusto, precoVenda, estoque, controlarEstoque, estoqueMinimo } = req.body;
 
     if (!nome || !categoria || precoCusto === undefined || precoVenda === undefined) {
       return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
     }
 
+    const id = Math.random().toString(36).substring(2, 9);
     const novoProduto: Produto = {
-      id: Math.random().toString(36).substring(2, 9),
+      id,
       nome,
       categoria,
       precoCusto: Number(precoCusto),
@@ -139,136 +77,175 @@ app.use(express.json());
       estoqueMinimo: estoqueMinimo !== undefined ? Number(estoqueMinimo) : undefined
     };
 
-    db.produtos.push(novoProduto);
-    saveDb(db);
+    await setDoc(doc(db, 'produtos', id), novoProduto);
     res.status(201).json(novoProduto);
-  });
+  } catch (error) {
+    console.error('Erro ao criar produto:', error);
+    res.status(500).json({ error: 'Erro ao criar produto' });
+  }
+});
 
-  // Atualizar produto
-  app.put('/api/produtos/:id', (req, res) => {
-    const db = loadDb();
+// Atualizar produto
+app.put('/api/produtos/:id', async (req, res) => {
+  try {
     const { id } = req.params;
-    const { nome, categoria, precoCusto, precoVenda, estoque, controlarEstoque, estoqueMinimo } = req.body;
+    const updateData = req.body;
 
-    const index = db.produtos.findIndex(p => p.id === id);
-    if (index === -1) {
+    const produtoRef = doc(db, 'produtos', id);
+    const produtoSnap = await getDoc(produtoRef);
+
+    if (!produtoSnap.exists()) {
       return res.status(404).json({ error: 'Produto não encontrado.' });
     }
 
-    const pOriginal = db.produtos[index];
-    db.produtos[index] = {
+    const pOriginal = produtoSnap.data() as Produto;
+    const produtoAtualizado: Produto = {
       ...pOriginal,
-      nome: nome !== undefined ? nome : pOriginal.nome,
-      categoria: categoria !== undefined ? categoria : pOriginal.categoria,
-      precoCusto: precoCusto !== undefined ? Number(precoCusto) : pOriginal.precoCusto,
-      precoVenda: precoVenda !== undefined ? Number(precoVenda) : pOriginal.precoVenda,
-      estoque: controlarEstoque !== undefined ? (Boolean(controlarEstoque) ? Number(estoque || 0) : 0) : pOriginal.estoque,
-      controlarEstoque: controlarEstoque !== undefined ? Boolean(controlarEstoque) : pOriginal.controlarEstoque,
-      estoqueMinimo: estoqueMinimo !== undefined ? Number(estoqueMinimo) : pOriginal.estoqueMinimo
+      nome: updateData.nome !== undefined ? updateData.nome : pOriginal.nome,
+      categoria: updateData.categoria !== undefined ? updateData.categoria : pOriginal.categoria,
+      precoCusto: updateData.precoCusto !== undefined ? Number(updateData.precoCusto) : pOriginal.precoCusto,
+      precoVenda: updateData.precoVenda !== undefined ? Number(updateData.precoVenda) : pOriginal.precoVenda,
+      estoque: updateData.controlarEstoque !== undefined ? (Boolean(updateData.controlarEstoque) ? Number(updateData.estoque || 0) : 0) : pOriginal.estoque,
+      controlarEstoque: updateData.controlarEstoque !== undefined ? Boolean(updateData.controlarEstoque) : pOriginal.controlarEstoque,
+      estoqueMinimo: updateData.estoqueMinimo !== undefined ? Number(updateData.estoqueMinimo) : pOriginal.estoqueMinimo
     };
 
-    saveDb(db);
-    res.json(db.produtos[index]);
-  });
+    await updateDoc(produtoRef, produtoAtualizado as any);
+    res.json(produtoAtualizado);
+  } catch (error) {
+    console.error('Erro ao atualizar produto:', error);
+    res.status(500).json({ error: 'Erro ao atualizar produto' });
+  }
+});
 
-  // Deletar produto
-  app.delete('/api/produtos/:id', (req, res) => {
-    const db = loadDb();
+// Deletar produto
+app.delete('/api/produtos/:id', async (req, res) => {
+  try {
     const { id } = req.params;
+    const produtoRef = doc(db, 'produtos', id);
+    const produtoSnap = await getDoc(produtoRef);
 
-    const filtrados = db.produtos.filter(p => p.id !== id);
-    if (filtrados.length === db.produtos.length) {
+    if (!produtoSnap.exists()) {
       return res.status(404).json({ error: 'Produto não encontrado.' });
     }
 
-    db.produtos = filtrados;
-    saveDb(db);
+    await deleteDoc(produtoRef);
     res.json({ message: 'Produto removido com sucesso.' });
-  });
+  } catch (error) {
+    console.error('Erro ao deletar produto:', error);
+    res.status(500).json({ error: 'Erro ao deletar produto' });
+  }
+});
 
+// 2. MÓDULO DE COMANDAS
 
-  // 2. MÓDULO DE COMANDAS
-
-  // Listar comandas ativas
-  app.get('/api/comandas', (req, res) => {
-    const db = loadDb();
+// Listar comandas ativas
+app.get('/api/comandas', async (req, res) => {
+  try {
     const ativasOnly = req.query.ativas === 'true';
+    let comandasQuery;
+    
     if (ativasOnly) {
-      res.json(db.comandas.filter(c => c.ativa));
+      comandasQuery = query(collection(db, 'comandas'), where('ativa', '==', true));
     } else {
-      res.json(db.comandas);
+      comandasQuery = collection(db, 'comandas');
     }
-  });
+    
+    const comandasSnapshot = await getDocs(comandasQuery);
+    const comandas = comandasSnapshot.docs.map(doc => doc.data() as Comanda);
+    res.json(comandas);
+  } catch (error) {
+    console.error('Erro ao listar comandas:', error);
+    res.status(500).json({ error: 'Erro ao listar comandas' });
+  }
+});
 
-  // Abrir comanda/mesa
-  app.post('/api/comandas', (req, res) => {
-    const db = loadDb();
+// Abrir comanda/mesa
+app.post('/api/comandas', async (req, res) => {
+  try {
     const { identificador } = req.body;
 
     if (!identificador || identificador.trim() === '') {
       return res.status(400).json({ error: 'O identificador da comanda/mesa é obrigatório.' });
     }
 
-    // Verifica se já existe uma comanda ativa com o mesmo nome para evitar duplicados chatos
-    const existente = db.comandas.find(c => c.ativa && c.identificador.toLowerCase() === identificador.toLowerCase());
+    const comandasSnapshot = await getDocs(query(collection(db, 'comandas'), where('ativa', '==', true)));
+    const comandas = comandasSnapshot.docs.map(doc => doc.data() as Comanda);
+    
+    const existente = comandas.find(c => c.identificador.toLowerCase() === identificador.toLowerCase());
     if (existente) {
       return res.status(400).json({ error: `Já existe uma comanda ativa para "${identificador}".` });
     }
 
+    const id = Math.random().toString(36).substring(2, 9);
     const novaComanda: Comanda = {
-      id: Math.random().toString(36).substring(2, 9),
+      id,
       identificador: identificador.trim(),
       ativa: true,
       itens: [],
       dataAbertura: new Date().toISOString()
     };
 
-    db.comandas.push(novaComanda);
-    saveDb(db);
+    await setDoc(doc(db, 'comandas', id), novaComanda);
     res.status(201).json(novaComanda);
-  });
+  } catch (error) {
+    console.error('Erro ao abrir comanda:', error);
+    res.status(500).json({ error: 'Erro ao abrir comanda' });
+  }
+});
 
-  // Adicionar ou atualizar itens gradativamente na comanda
-  app.put('/api/comandas/:id/itens', (req, res) => {
-    const db = loadDb();
+// Adicionar ou atualizar itens gradativamente na comanda
+app.put('/api/comandas/:id/itens', async (req, res) => {
+  try {
     const { id } = req.params;
-    const { itens } = req.body; // Array de ItemCarrinho
+    const { itens } = req.body;
 
     if (!Array.isArray(itens)) {
       return res.status(400).json({ error: 'Formato de itens inválido.' });
     }
 
-    const comanda = db.comandas.find(c => c.id === id && c.ativa);
-    if (!comanda) {
+    const comandaRef = doc(db, 'comandas', id);
+    const comandaSnap = await getDoc(comandaRef);
+
+    if (!comandaSnap.exists() || !comandaSnap.data().ativa) {
       return res.status(404).json({ error: 'Comanda ativa não encontrada.' });
     }
 
+    const comanda = comandaSnap.data() as Comanda;
     comanda.itens = itens;
-    saveDb(db);
+
+    await updateDoc(comandaRef, { itens });
     res.json(comanda);
-  });
+  } catch (error) {
+    console.error('Erro ao atualizar itens da comanda:', error);
+    res.status(500).json({ error: 'Erro ao atualizar itens da comanda' });
+  }
+});
 
-  // Cancelar comanda ativa inteira (excluir ou desativar)
-  app.delete('/api/comandas/:id', (req, res) => {
-    const db = loadDb();
+// Cancelar comanda ativa inteira
+app.delete('/api/comandas/:id', async (req, res) => {
+  try {
     const { id } = req.params;
+    const comandaRef = doc(db, 'comandas', id);
+    const comandaSnap = await getDoc(comandaRef);
 
-    const index = db.comandas.findIndex(c => c.id === id);
-    if (index === -1) {
+    if (!comandaSnap.exists()) {
       return res.status(404).json({ error: 'Comanda não encontrada.' });
     }
 
-    db.comandas.splice(index, 1);
-    saveDb(db);
+    await deleteDoc(comandaRef);
     res.json({ message: 'Comanda cancelada com sucesso.' });
-  });
+  } catch (error) {
+    console.error('Erro ao cancelar comanda:', error);
+    res.status(500).json({ error: 'Erro ao cancelar comanda' });
+  }
+});
 
+// 3. MÓDULO DE PDV (FRENTE DE CAIXA) & FECHAMENTO DE COMPRA
 
-  // 3. MÓDULO DE PDV (FRENTE DE CAIXA) & FECHAMENTO DE COMPRA
-
-  // Registrar Venda (seja Direta ou Fechando Comanda)
-  app.post('/api/vendas', (req, res) => {
-    const db = loadDb();
+// Registrar Venda
+app.post('/api/vendas', async (req, res) => {
+  try {
     const { comandaId, itens, formaPagamento } = req.body;
 
     if (!formaPagamento) {
@@ -278,14 +255,15 @@ app.use(express.json());
     let itensVenda: ItemCarrinho[] = [];
     let comandaIdentificador: string | undefined;
 
-    // Se vier de uma comanda
     if (comandaId) {
-      const comandaIndex = db.comandas.findIndex(c => c.id === comandaId && c.ativa);
-      if (comandaIndex === -1) {
+      const comandaRef = doc(db, 'comandas', comandaId);
+      const comandaSnap = await getDoc(comandaRef);
+
+      if (!comandaSnap.exists() || !comandaSnap.data().ativa) {
         return res.status(404).json({ error: 'Comanda ativa não encontrada.' });
       }
       
-      const comanda = db.comandas[comandaIndex];
+      const comanda = comandaSnap.data() as Comanda;
       itensVenda = comanda.itens;
       comandaIdentificador = comanda.identificador;
 
@@ -293,31 +271,29 @@ app.use(express.json());
         return res.status(400).json({ error: 'Não é possível fechar uma comanda vazia.' });
       }
 
-      // Desativa/fecha a comanda
-      comanda.ativa = false;
+      await updateDoc(comandaRef, { ativa: false });
     } else {
-      // Venda direta de balcão
       if (!itens || !Array.isArray(itens) || itens.length === 0) {
         return res.status(400).json({ error: 'O carrinho está vazio.' });
       }
       itensVenda = itens;
     }
 
-    // Calcula o total
     const total = itensVenda.reduce((acc, item) => acc + (item.precoVenda * item.quantidade), 0);
 
-    // Baixa inteligente no estoque para os produtos vendidos
-    itensVenda.forEach(item => {
-      const prod = db.produtos.find(p => p.id === item.produtoId);
-      if (prod) {
-        // Verifica se o controle de estoque está ativo para o produto
+    // Baixa no estoque
+    for (const item of itensVenda) {
+      const prodRef = doc(db, 'produtos', item.produtoId);
+      const prodSnap = await getDoc(prodRef);
+      if (prodSnap.exists()) {
+        const prod = prodSnap.data() as Produto;
         if (prod.controlarEstoque) {
-          prod.estoque = Math.max(0, prod.estoque - item.quantidade); // Evita estoque negativo indesejado, mas deduz
+          const novoEstoque = Math.max(0, prod.estoque - item.quantidade);
+          await updateDoc(prodRef, { estoque: novoEstoque });
         }
       }
-    });
+    }
 
-    // Registra a venda
     const novaVenda: Venda = {
       id: Math.random().toString(36).substring(2, 9),
       comandaId,
@@ -328,27 +304,25 @@ app.use(express.json());
       formaPagamento: formaPagamento as FormaPagamento
     };
 
-    db.vendas.push(novaVenda);
-    saveDb(db);
-
+    await setDoc(doc(db, 'vendas', novaVenda.id), novaVenda);
     res.status(201).json(novaVenda);
-  });
+  } catch (error) {
+    console.error('Erro ao registrar venda:', error);
+    res.status(500).json({ error: 'Erro ao registrar venda' });
+  }
+});
 
-
-  // 4. RELATÓRIOS E FECHAMENTO DE CAIXA
-
-  app.get('/api/vendas/relatorio', (req, res) => {
-    const db = loadDb();
-    
-    // Filtro opcional por período de dias (padrão: hoje)
+// 4. RELATÓRIOS E FECHAMENTO DE CAIXA
+app.get('/api/vendas/relatorio', async (req, res) => {
+  try {
     const hojeStr = new Date().toISOString().split('T')[0];
-
-    const vendasHoje = db.vendas.filter(v => v.data.startsWith(hojeStr));
-
+    const vendasSnapshot = await getDocs(collection(db, 'vendas'));
+    const vendas = vendasSnapshot.docs.map(doc => doc.data() as Venda);
+    
+    const vendasHoje = vendas.filter(v => v.data.startsWith(hojeStr));
     const totalGeral = vendasHoje.reduce((acc, v) => acc + v.total, 0);
 
-    // Separar por forma de pagamento
-    const porForma = {
+    const porForma: Record<string, number> = {
       'Dinheiro': 0,
       'Cartão de Crédito': 0,
       'Cartão de Débito': 0,
@@ -361,7 +335,6 @@ app.use(express.json());
       }
     });
 
-    // Calcula quantidade de produtos mais vendidos hoje
     const produtosVendidos: { [nome: string]: number } = {};
     vendasHoje.forEach(v => {
       v.itens.forEach(item => {
@@ -387,65 +360,54 @@ app.use(express.json());
       maisVendidos,
       vendasDetalhadas: vendasHoje
     });
-  });
+  } catch (error) {
+    console.error('Erro ao gerar relatório:', error);
+    res.status(500).json({ error: 'Erro ao gerar relatório' });
+  }
+});
 
-  // Limpar histórico de vendas/reiniciar caixa do dia (útil para testes rápidos)
-  app.post('/api/vendas/reiniciar', (req, res) => {
-    const db = loadDb();
-    db.vendas = [];
-    // Opcional: recarregar estoque dos produtos de controle para o padrão
-    db.produtos.forEach(p => {
-      if (p.id === '1') p.estoque = 150;
-      if (p.id === '2') p.estoque = 85;
-      if (p.id === '5') p.estoque = 20;
-      if (p.id === '6') p.estoque = 100;
-      if (p.id === '8') p.estoque = 12;
-    });
-    // Limpa comandas também para reiniciar testes limpos
-    db.comandas = [
-      {
-        id: 'c1',
-        identificador: 'Mesa 3',
-        ativa: true,
-        itens: [
-          { produtoId: '1', nome: 'Chopp Brahma 300ml', quantidade: 3, precoVenda: 9.90 },
-          { produtoId: '4', nome: 'Feijoada Completa (Individual)', quantidade: 1, precoVenda: 35.90 }
-        ],
-        dataAbertura: new Date().toISOString()
-      },
-      {
-        id: 'c2',
-        identificador: 'Comanda 42 (Bruno)',
-        ativa: true,
-        itens: [
-          { produtoId: '2', nome: 'Coca-Cola Lata 350ml', quantidade: 1, precoVenda: 6.00 },
-          { produtoId: '3', nome: 'Prato Feito de Frango', quantidade: 1, precoVenda: 23.90 }
-        ],
-        dataAbertura: new Date().toISOString()
-      }
-    ];
-    saveDb(db);
-    res.json({ message: 'Caixa e comandas reiniciados para valores de demonstração.' });
-  });
+app.post('/api/vendas/reiniciar', async (req, res) => {
+  try {
+    const vendasSnapshot = await getDocs(collection(db, 'vendas'));
+    for (const d of vendasSnapshot.docs) {
+      await deleteDoc(d.ref);
+    }
+    
+    const comandasSnapshot = await getDocs(collection(db, 'comandas'));
+    for (const d of comandasSnapshot.docs) {
+      await deleteDoc(d.ref);
+    }
+    
+    res.json({ message: 'Vendas e comandas limpas (demonstração).' });
+  } catch (error) {
+    console.error('Erro ao limpar base:', error);
+    res.status(500).json({ error: 'Erro ao limpar base' });
+  }
+});
 
-  // 5. CADASTRO DE EMPRESA / ESTABELECIMENTO
-  
-  // Obter dados da empresa
-  app.get('/api/empresa', (req, res) => {
-    const db = loadDb();
-    res.json(db.empresa || defaultEmpresa);
-  });
+// 5. CADASTRO DE EMPRESA
+app.get('/api/empresa', async (req, res) => {
+  try {
+    const docSnap = await getDoc(doc(db, 'config', 'empresa'));
+    if (docSnap.exists()) {
+      res.json(docSnap.data());
+    } else {
+      res.json(defaultEmpresa);
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar empresa' });
+  }
+});
 
-  // Salvar dados da empresa
-  app.put('/api/empresa', (req, res) => {
-    const db = loadDb();
+app.put('/api/empresa', async (req, res) => {
+  try {
     const { nome, cnpj, endereco, telefone, slogan, logo } = req.body;
 
     if (!nome || !nome.trim()) {
       return res.status(400).json({ error: 'O nome da empresa é obrigatório.' });
     }
 
-    db.empresa = {
+    const dadosEmpresa = {
       nome: nome.trim(),
       cnpj: (cnpj || '').trim(),
       endereco: (endereco || '').trim(),
@@ -454,24 +416,32 @@ app.use(express.json());
       logo: logo || ''
     };
 
-    saveDb(db);
-    res.json(db.empresa);
-  });
+    await setDoc(doc(db, 'config', 'empresa'), dadosEmpresa);
+    res.json(dadosEmpresa);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar empresa' });
+  }
+});
 
-  // --- CONFIGURAÇÃO DE IMPRESSORAS ---
+// 6. IMPRESSORAS
+app.get('/api/printer-config', async (req, res) => {
+  try {
+    const docSnap = await getDoc(doc(db, 'config', 'printer'));
+    if (docSnap.exists()) {
+      res.json(docSnap.data());
+    } else {
+      res.json(defaultPrinterConfig);
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar config de impressora' });
+  }
+});
 
-  // Obter configurações de impressão
-  app.get('/api/printer-config', (req, res) => {
-    const db = loadDb();
-    res.json(db.printerConfig || defaultPrinterConfig);
-  });
-
-  // Salvar configurações de impressão
-  app.put('/api/printer-config', (req, res) => {
-    const db = loadDb();
+app.put('/api/printer-config', async (req, res) => {
+  try {
     const { cozinhaIp, cozinhaPorta, caixaIp, caixaPorta, usarApiRemota, apiUrl, apiToken, tipoImpressora } = req.body;
 
-    db.printerConfig = {
+    const printerConfig = {
       cozinhaIp: (cozinhaIp || '192.168.1.100').trim(),
       cozinhaPorta: Number(cozinhaPorta) || 9100,
       caixaIp: (caixaIp || '192.168.1.200').trim(),
@@ -482,16 +452,19 @@ app.use(express.json());
       tipoImpressora: tipoImpressora || 'escpos'
     };
 
-    saveDb(db);
-    res.json(db.printerConfig);
-  });
+    await setDoc(doc(db, 'config', 'printer'), printerConfig);
+    res.json(printerConfig);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar impressora' });
+  }
+});
 
-  // Enviar comando de impressão para API remota ou simular conexão direta
-  app.post('/api/imprimir', async (req, res) => {
-    const db = loadDb();
-    const config = db.printerConfig || defaultPrinterConfig;
+app.post('/api/imprimir', async (req, res) => {
+  try {
+    const docSnap = await getDoc(doc(db, 'config', 'printer'));
+    const config = docSnap.exists() ? docSnap.data() as PrinterConfig : defaultPrinterConfig;
+    
     const { tipo, identificador, itens, observacao, data, textoFormatado } = req.body;
-
     const ipDestino = tipo === 'cozinha' ? config.cozinhaIp : config.caixaIp;
     const portaDestino = tipo === 'cozinha' ? config.cozinhaPorta : config.caixaPorta;
 
@@ -510,59 +483,38 @@ app.use(express.json());
       }
     };
 
-    // Caso o usuário queira disparar uma requisição real para um servidor de impressão
     if (config.usarApiRemota && config.apiUrl) {
-      try {
-        console.log(`[Printer] Disparando requisição remota de impressão para: ${config.apiUrl}`);
-        
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json'
-        };
-        
-        if (config.apiToken) {
-          headers['Authorization'] = `Bearer ${config.apiToken}`;
-        }
+      console.log(`[Printer] Disparando requisição remota de impressão para: ${config.apiUrl}`);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (config.apiToken) headers['Authorization'] = `Bearer ${config.apiToken}`;
 
-        const response = await fetch(config.apiUrl, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-          // define um timeout pequeno para não travar a requisição se a API estiver fora
-          signal: AbortSignal.timeout(5000)
+      const response = await fetch(config.apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(5000)
+      });
+
+      if (response.ok) {
+        const responseData = await response.json().catch(() => ({}));
+        return res.json({
+          success: true,
+          metodo: 'api_remota',
+          mensagem: `Impresso com sucesso via API Remota em: ${config.apiUrl}`,
+          detalhes: responseData,
+          payload
         });
-
-        if (response.ok) {
-          const responseData = await response.json().catch(() => ({}));
-          return res.json({
-            success: true,
-            metodo: 'api_remota',
-            mensagem: `Impresso com sucesso via API Remota em: ${config.apiUrl}`,
-            detalhes: responseData,
-            payload
-          });
-        } else {
-          return res.status(502).json({
-            success: false,
-            metodo: 'api_remota',
-            error: `A API de Impressão respondeu com erro (${response.status}: ${response.statusText})`,
-            payload
-          });
-        }
-      } catch (err: any) {
-        console.error('Erro ao conectar com API remota de impressão:', err);
-        return res.status(504).json({
+      } else {
+        return res.status(502).json({
           success: false,
           metodo: 'api_remota',
-          error: `Não foi possível conectar à API Remota de Impressão. Detalhes: ${err.message || err}`,
+          error: `A API respondeu com erro (${response.status})`,
           payload
         });
       }
     }
 
-    // Se não estiver usando API remota externa, fazemos a simulação local simulando rede
     console.log(`[Thermal Print Simulation] Enviando cupom (${tipo}) para ${ipDestino}:${portaDestino}`);
-    
-    // Retorna uma resposta estruturada de simulação que o front-end usará para mostrar o log real
     setTimeout(() => {
       res.json({
         success: true,
@@ -577,34 +529,38 @@ app.use(express.json());
         payload
       });
     }, 800);
-  });
+  } catch (error: any) {
+    console.error('Erro ao imprimir:', error);
+    res.status(500).json({ error: 'Erro ao processar impressão.' });
+  }
+});
 
-  // Serve static files / Vite middleware & listen
-  async function startServer() {
-    if (process.env.NODE_ENV !== 'production') {
-      const { createServer: createViteServer } = await import('vite');
-      const vite = await createViteServer({
-        server: { middlewareMode: true },
-        appType: 'spa',
-      });
-      app.use(vite.middlewares);
-    } else {
-      const distPath = path.join(process.cwd(), 'dist');
-      app.use(express.static(distPath));
-      app.get('*', (req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
-      });
-    }
-
-    if (process.env.VERCEL !== '1') {
-      app.listen(PORT, '0.0.0.0', () => {
-        console.log(`[PDV Server] Rodando com sucesso na porta ${PORT}`);
-      });
-    }
+// Serve static files / Vite middleware & listen
+async function startServer() {
+  if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
   }
 
-  startServer().catch(err => {
-    console.error('[Server] Erro ao iniciar servidor:', err);
-  });
+  if (process.env.VERCEL !== '1') {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[PDV Server] Rodando com Firebase Firestore na porta ${PORT}`);
+    });
+  }
+}
 
-  export default app;
+startServer().catch(err => {
+  console.error('[Server] Erro ao iniciar servidor:', err);
+});
+
+export default app;
