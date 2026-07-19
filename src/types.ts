@@ -37,6 +37,13 @@ export interface Venda {
   parcelas?: number;
 }
 
+export interface PixConfig {
+  chave: string;
+  tipoChave: 'CPF' | 'CNPJ' | 'Email' | 'Telefone' | 'Aleatoria';
+  nomeRecebedor: string;
+  cidadeRecebedor: string;
+}
+
 export interface Empresa {
   nome: string;
   cnpj: string;
@@ -44,6 +51,7 @@ export interface Empresa {
   telefone: string;
   slogan: string;
   logo: string; // Base64 ou URL da imagem
+  pixConfig?: PixConfig;
 }
 
 export interface PrinterConfig {

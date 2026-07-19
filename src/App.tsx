@@ -32,7 +32,8 @@ import {
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
-import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './types';
+import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig, PixConfig } from './types';
+import { generatePixCopiaECola } from './utils/pixGenerator';
 
 export default function App() {
   // Autenticação
@@ -149,6 +150,11 @@ export default function App() {
   const [empresaFormTelefone, setEmpresaFormTelefone] = useState<string>('');
   const [empresaFormSlogan, setEmpresaFormSlogan] = useState<string>('');
   const [empresaFormLogo, setEmpresaFormLogo] = useState<string>('');
+  const [empresaFormPixChave, setEmpresaFormPixChave] = useState<string>('');
+  const [empresaFormPixTipo, setEmpresaFormPixTipo] = useState<'CPF' | 'CNPJ' | 'Email' | 'Telefone' | 'Aleatoria'>('CPF');
+  const [empresaFormPixNome, setEmpresaFormPixNome] = useState<string>('');
+  const [empresaFormPixCidade, setEmpresaFormPixCidade] = useState<string>('');
+  const [gerarPixQR, setGerarPixQR] = useState<boolean>(false);
 
   // Estados de Configuração de Impressão
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>({
@@ -366,7 +372,13 @@ export default function App() {
       endereco: empresaFormEndereco.trim(),
       telefone: empresaFormTelefone.trim(),
       slogan: empresaFormSlogan.trim(),
-      logo: empresaFormLogo
+      logo: empresaFormLogo,
+      pixConfig: empresaFormPixChave.trim() ? {
+        chave: empresaFormPixChave.trim(),
+        tipoChave: empresaFormPixTipo,
+        nomeRecebedor: empresaFormPixNome.trim(),
+        cidadeRecebedor: empresaFormPixCidade.trim()
+      } : undefined
     };
 
     try {
@@ -395,6 +407,10 @@ export default function App() {
     setEmpresaFormTelefone(empresa.telefone || '');
     setEmpresaFormSlogan(empresa.slogan || '');
     setEmpresaFormLogo(empresa.logo || '');
+    setEmpresaFormPixChave(empresa.pixConfig?.chave || '');
+    setEmpresaFormPixTipo(empresa.pixConfig?.tipoChave || 'CPF');
+    setEmpresaFormPixNome(empresa.pixConfig?.nomeRecebedor || '');
+    setEmpresaFormPixCidade(empresa.pixConfig?.cidadeRecebedor || '');
     setActiveTab('empresa');
   };
 
@@ -1454,6 +1470,91 @@ export default function App() {
                             )}
                           </div>
                         )}
+                        {formaPagamento === 'PIX' && (
+                          <div className="mt-3 bg-[#1A1A1D] p-3 rounded-lg border border-zinc-800 flex flex-col items-center">
+                            {!empresa.pixConfig?.chave ? (
+                              <p className="text-[10px] text-amber-500 text-center font-bold">
+                                Nenhuma chave PIX foi cadastrada. Cadastre uma chave em Configurações &gt; PIX para gerar o QR Code.
+                              </p>
+                            ) : (
+                              <>
+                                <label className="text-[11px] text-zinc-300 font-bold block mb-2 uppercase tracking-wider text-center">Gerar QR Code PIX?</label>
+                                <div className="flex gap-2 mb-3 w-full max-w-[200px]">
+                                  <button
+                                    type="button"
+                                    onClick={() => setGerarPixQR(true)}
+                                    className={`flex-1 py-1.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
+                                      gerarPixQR
+                                        ? 'bg-teal-500 text-zinc-950 border-teal-500'
+                                        : 'bg-[#121214] text-teal-400 border-zinc-700 hover:border-teal-500/50'
+                                    }`}
+                                  >
+                                    Sim
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setGerarPixQR(false)}
+                                    className={`flex-1 py-1.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
+                                      !gerarPixQR
+                                        ? 'bg-zinc-700 text-zinc-100 border-zinc-600'
+                                        : 'bg-[#121214] text-zinc-400 border-zinc-700 hover:border-zinc-500'
+                                    }`}
+                                  >
+                                    Não
+                                  </button>
+                                </div>
+
+                                {gerarPixQR && totalCarrinho > 0 && (() => {
+                                  // Em um App React real, não importariamos inline, mas o vite/esbuild lida bem se importarmos no topo do arquivo.
+                                  // Para evitar erro de referência se a importação não for feita no topo, vou calcular a string aqui via função importada ou chamar o gerador.
+                                  // A importação será feita no topo do arquivo.
+                                  return (
+                                    <div className="w-full flex flex-col items-center gap-2 animate-fadeIn bg-white p-2 rounded-xl">
+                                      <img 
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                                          generatePixCopiaECola(
+                                            empresa.pixConfig.chave,
+                                            empresa.pixConfig.nomeRecebedor,
+                                            empresa.pixConfig.cidadeRecebedor,
+                                            totalCarrinho
+                                          )
+                                        )}`}
+                                        alt="QR Code PIX"
+                                        className="w-32 h-32"
+                                      />
+                                      <div className="w-full relative group">
+                                        <input 
+                                          type="text" 
+                                          readOnly 
+                                          value={generatePixCopiaECola(
+                                            empresa.pixConfig.chave,
+                                            empresa.pixConfig.nomeRecebedor,
+                                            empresa.pixConfig.cidadeRecebedor,
+                                            totalCarrinho
+                                          )}
+                                          className="w-full bg-zinc-100 border border-zinc-300 rounded text-[9px] text-zinc-800 py-1.5 pl-2 pr-8 truncate font-mono focus:outline-none"
+                                        />
+                                        <button 
+                                          onClick={() => navigator.clipboard.writeText(generatePixCopiaECola(
+                                            empresa.pixConfig!.chave,
+                                            empresa.pixConfig!.nomeRecebedor,
+                                            empresa.pixConfig!.cidadeRecebedor,
+                                            totalCarrinho
+                                          ))}
+                                          className="absolute right-1.5 top-1.5 text-zinc-500 hover:text-teal-600 cursor-pointer bg-zinc-200 rounded p-0.5"
+                                          title="Copiar PIX Copia e Cola"
+                                        >
+                                          <Check className="w-3 h-3 hidden group-active:block text-emerald-600" />
+                                          <div className="w-3 h-3 block group-active:hidden">📋</div>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Botões de Ação Final */}
@@ -2108,6 +2209,67 @@ export default function App() {
                           placeholder="Ex: https://meusite.com/images/logo.png"
                         />
                       </div>
+                    </div>
+
+                    {/* PIX Configuration Block */}
+                    <div className="mt-8 border-t border-zinc-800 pt-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <QrCode className="w-5 h-5 text-emerald-400" />
+                        <h4 className="font-bold text-zinc-200 text-sm">Configuração de Pagamento PIX</h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#1E1E22]/30 p-4 rounded-xl border border-zinc-800/80">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase">Tipo de Chave PIX</label>
+                          <select
+                            value={empresaFormPixTipo}
+                            onChange={(e) => setEmpresaFormPixTipo(e.target.value as any)}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
+                          >
+                            <option value="CPF">CPF</option>
+                            <option value="CNPJ">CNPJ</option>
+                            <option value="Email">E-mail</option>
+                            <option value="Telefone">Telefone (Celular)</option>
+                            <option value="Aleatoria">Chave Aleatória (EVP)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase">Chave PIX</label>
+                          <input
+                            type="text"
+                            value={empresaFormPixChave}
+                            onChange={(e) => setEmpresaFormPixChave(e.target.value)}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            placeholder="Ex: 123.456.789-00"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase">Nome do Recebedor (Titular)</label>
+                          <input
+                            type="text"
+                            value={empresaFormPixNome}
+                            onChange={(e) => setEmpresaFormPixNome(e.target.value)}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            placeholder="Ex: Joao Silva"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase">Cidade do Recebedor</label>
+                          <input
+                            type="text"
+                            value={empresaFormPixCidade}
+                            onChange={(e) => setEmpresaFormPixCidade(e.target.value)}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            placeholder="Ex: Sao Paulo"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 mt-2">
+                        Deixe a "Chave PIX" em branco para desativar a geração de QR Code no PDV. Ao preencher, os QR Codes gerados enviarão o pagamento diretamente para esta chave, usando o padrão do Banco Central (EMVCo).
+                      </p>
                     </div>
 
                     <div className="flex justify-end pt-2">
