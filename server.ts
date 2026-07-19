@@ -555,9 +555,9 @@ app.post('/api/login', async (req, res) => {
     } else {
       res.status(401).json({ success: false, error: 'Senha incorreta.' });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro no login:', error);
-    res.status(500).json({ error: 'Erro no servidor durante o login.' });
+    res.status(500).json({ error: 'Erro no Firebase: ' + (error.message || String(error)) });
   }
 });
 
