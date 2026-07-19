@@ -1173,7 +1173,7 @@ export default function App() {
                   </div>
 
                   {/* Grid de Produtos */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto h-[45vh] lg:h-[calc(100vh-290px)] pr-1" id="pdv-products-grid">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto min-h-[300px] lg:h-[calc(100vh-290px)] pr-1" id="pdv-products-grid">
                     {produtosFiltrados.length === 0 ? (
                       <div className="col-span-full bg-[#121214] border border-zinc-800 rounded-xl p-10 text-center text-zinc-400" id="no-products-found">
                         <Coffee className="w-10 h-10 mx-auto text-zinc-600 mb-2" />
@@ -1244,7 +1244,7 @@ export default function App() {
                 </div>
 
                 {/* COLUNA DIREITA: OPERADOR DE CAIXA / CARRINHO */}
-                <div className="lg:col-span-5 flex flex-col h-[45vh] lg:h-[calc(100vh-220px)]" id="pdv-cart-col">
+                <div className="lg:col-span-5 flex flex-col min-h-[400px] lg:min-h-0 lg:h-[calc(100vh-220px)]" id="pdv-cart-col">
                   <div className="bg-[#121214] border border-zinc-800 rounded-xl shadow-md flex flex-col h-full overflow-hidden">
                     
                     {/* SELETOR DE MODO (BALCÃO VS COMANDA) */}
