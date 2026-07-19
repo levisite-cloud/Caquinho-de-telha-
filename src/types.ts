@@ -34,6 +34,7 @@ export interface Venda {
   itens: ItemCarrinho[];
   total: number;
   formaPagamento: FormaPagamento;
+  parcelas?: number;
 }
 
 export interface Empresa {

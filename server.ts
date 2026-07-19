@@ -321,8 +321,10 @@ app.get('/api/vendas/relatorio', async (req, res) => {
       'PIX': 0
     };
 
-    vendasHoje.forEach(v => {
-      if (porForma[v.formaPagamento] !== undefined) {
+    vendasHoje.forEach((v: any) => {
+      if (v.formaPagamento.startsWith('Cartão de Crédito')) {
+        porForma['Cartão de Crédito'] += v.total;
+      } else if (porForma[v.formaPagamento] !== undefined) {
         porForma[v.formaPagamento] += v.total;
       }
     });

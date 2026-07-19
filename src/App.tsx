@@ -116,7 +116,9 @@ export default function App() {
   const [buscaProduto, setBuscaProduto] = useState<string>('');
   const [comandaSelecionadaId, setComandaSelecionadaId] = useState<string>('');
   const [modoVenda, setModoVenda] = useState<'direta' | 'comanda'>('direta');
+
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>('Dinheiro');
+  const [parcelasCredito, setParcelasCredito] = useState(1);
 
   // Modais e Formulários
   const [showNovaComandaModal, setShowNovaComandaModal] = useState<boolean>(false);
@@ -606,9 +608,10 @@ export default function App() {
 
     try {
       const body: any = {
-        formaPagamento,
+        formaPagamento: formaPagamento === 'Cartão de Crédito' ? `Cartão de Crédito - ${parcelasCredito}x` : formaPagamento,
         comandaId: modoVenda === 'comanda' ? comandaSelecionadaId : undefined,
-        itens: modoVenda === 'direta' ? carrinho : undefined
+        itens: modoVenda === 'direta' ? carrinho : undefined,
+        parcelas: formaPagamento === 'Cartão de Crédito' ? parcelasCredito : undefined
       };
 
       const res = await fetch('/api/vendas', {
@@ -1425,6 +1428,20 @@ export default function App() {
                             );
                           })}
                         </div>
+                        {formaPagamento === 'Cartão de Crédito' && (
+                          <div className="mt-3 bg-[#1A1A1D] p-2 rounded-lg border border-zinc-800 animate-fadeIn">
+                            <label className="text-[10px] text-zinc-400 font-bold block mb-1 uppercase tracking-wider">Número de Parcelas</label>
+                            <select
+                              value={parcelasCredito}
+                              onChange={(e) => setParcelasCredito(Number(e.target.value))}
+                              className="w-full bg-[#121214] text-amber-400 text-xs font-bold border border-zinc-700 focus:border-amber-500 rounded p-1.5 focus:outline-hidden"
+                            >
+                              {[1, 2, 3, 4, 5, 6].map(p => (
+                                <option key={p} value={p}>{p}x {p === 1 ? ' (À vista)' : ` de R$ ${(totalCarrinho / p).toFixed(2)}`}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
 
                       {/* Botões de Ação Final */}
