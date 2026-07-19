@@ -4,15 +4,7 @@ import fs from 'fs';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './src/types';
-
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Carregar configuração do Firebase a partir do arquivo
-const firebaseConfigRaw = fs.readFileSync(path.join(__dirname, 'firebase-applet-config.json'), 'utf-8');
-const firebaseConfig = JSON.parse(firebaseConfigRaw);
+import { firebaseConfig } from './firebaseConfig.js';
 
 // Inicializar Firebase
 const firebaseApp = initializeApp(firebaseConfig);
