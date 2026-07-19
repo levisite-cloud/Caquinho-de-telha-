@@ -1247,8 +1247,8 @@ export default function App() {
                 </div>
 
                 {/* COLUNA DIREITA: OPERADOR DE CAIXA / CARRINHO */}
-                <div className="lg:col-span-5 flex flex-col min-h-[400px] lg:min-h-0 lg:h-[calc(100vh-220px)]" id="pdv-cart-col">
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl shadow-md flex flex-col h-full overflow-hidden">
+                <div className="lg:col-span-5 flex flex-col min-h-[450px] lg:min-h-0 lg:h-[calc(100vh-220px)]" id="pdv-cart-col">
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl shadow-md flex flex-col lg:h-full lg:overflow-hidden h-auto">
                     
                     {/* SELETOR DE MODO (BALCÃO VS COMANDA) */}
                     <div className="bg-[#0A0A0B] p-3 flex flex-col gap-2 border-b border-zinc-800">
@@ -1312,7 +1312,7 @@ export default function App() {
                     </div>
 
                     {/* LISTAGEM DOS ITENS NO CARRINHO */}
-                    <div className="flex-1 p-4 overflow-y-auto min-h-[220px]" id="cart-items-container">
+                    <div className="flex-1 p-4 overflow-y-auto min-h-[150px] lg:min-h-[220px]" id="cart-items-container">
                       <div className="flex justify-between items-center pb-2.5 border-b border-zinc-800 mb-3">
                         <h3 className="font-bold text-zinc-100 text-sm flex items-center gap-1.5">
                           <Receipt className="w-4 h-4 text-amber-500" />
@@ -1392,7 +1392,7 @@ export default function App() {
                     </div>
 
                     {/* SUB-TOTAL & FORMA DE PAGAMENTO */}
-                    <div className="bg-[#161618] p-4 border-t border-zinc-800" id="cart-actions-container">
+                    <div className="bg-[#161618] p-4 border-t border-zinc-800 shrink-0" id="cart-actions-container">
                       <div className="flex justify-between items-center mb-3">
                         <span className="text-sm font-bold text-zinc-400">Total Geral:</span>
                         <span className="text-2xl font-black text-amber-400 font-mono">
