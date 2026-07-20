@@ -27,7 +27,11 @@ CREATE TABLE IF NOT EXISTS vendas (
   data TEXT NOT NULL,
   itens JSONB NOT NULL DEFAULT '[]',
   total NUMERIC NOT NULL,
-  formaPagamento TEXT NOT NULL
+  formaPagamento TEXT NOT NULL,
+  nfce_chave TEXT,
+  nfce_status TEXT,
+  nfce_xml TEXT,
+  nfce_recibo TEXT
 );
 
 -- Tabela genérica para configurações (Empresa, Impressora e Login)

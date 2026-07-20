@@ -35,6 +35,22 @@ export interface Venda {
   total: number;
   formaPagamento: FormaPagamento;
   parcelas?: number;
+  nfce_chave?: string;
+  nfce_status?: string;
+  nfce_xml?: string;
+  nfce_recibo?: string;
+}
+
+export interface NfceConfig {
+  ambiente: 'homologacao' | 'producao';
+  uf: string;
+  cnpj: string;
+  inscricaoEstadual: string;
+  csc: string;
+  idCsc: string;
+  apiUrl: string;
+  certificadoBase64: string;
+  certificadoSenha: string;
 }
 
 export interface PixConfig {
@@ -52,6 +68,7 @@ export interface Empresa {
   slogan: string;
   logo: string; // Base64 ou URL da imagem
   pixConfig?: PixConfig;
+  nfceConfig?: NfceConfig;
 }
 
 export interface PrinterConfig {

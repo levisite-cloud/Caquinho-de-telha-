@@ -158,6 +158,17 @@ export default function App() {
   const [showPixModal, setShowPixModal] = useState<boolean>(false);
   const [pixEmptyCartAlert, setPixEmptyCartAlert] = useState<boolean>(false);
 
+  // Estados de Configuração NFC-e
+  const [empresaFormNfceAmbiente, setEmpresaFormNfceAmbiente] = useState<'homologacao' | 'producao'>('homologacao');
+  const [empresaFormNfceUf, setEmpresaFormNfceUf] = useState<string>('');
+  const [empresaFormNfceCnpj, setEmpresaFormNfceCnpj] = useState<string>('');
+  const [empresaFormNfceIe, setEmpresaFormNfceIe] = useState<string>('');
+  const [empresaFormNfceCsc, setEmpresaFormNfceCsc] = useState<string>('');
+  const [empresaFormNfceIdCsc, setEmpresaFormNfceIdCsc] = useState<string>('');
+  const [empresaFormNfceApiUrl, setEmpresaFormNfceApiUrl] = useState<string>('');
+  const [empresaFormNfceCertificadoBase64, setEmpresaFormNfceCertificadoBase64] = useState<string>('');
+  const [empresaFormNfceCertificadoSenha, setEmpresaFormNfceCertificadoSenha] = useState<string>('');
+
   // Estados de Configuração de Impressão
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>({
     cozinhaIp: '192.168.1.100',
@@ -361,6 +372,25 @@ export default function App() {
     }
   };
 
+  const handleCertificadoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.pfx') && !file.name.endsWith('.p12')) {
+        mostrarFeedback('O certificado deve ser um arquivo .pfx ou .p12', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          // Extrair apenas o base64 descartando "data:application/x-pkcs12;base64,"
+          const base64 = reader.result.split(',')[1] || reader.result;
+          setEmpresaFormNfceCertificadoBase64(base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const salvarEmpresaForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!empresaFormNome.trim()) {
@@ -380,6 +410,17 @@ export default function App() {
         tipoChave: empresaFormPixTipo,
         nomeRecebedor: empresaFormPixNome.trim(),
         cidadeRecebedor: empresaFormPixCidade.trim()
+      } : undefined,
+      nfceConfig: empresaFormNfceCnpj.trim() ? {
+        ambiente: empresaFormNfceAmbiente,
+        uf: empresaFormNfceUf.trim(),
+        cnpj: empresaFormNfceCnpj.trim(),
+        inscricaoEstadual: empresaFormNfceIe.trim(),
+        csc: empresaFormNfceCsc.trim(),
+        idCsc: empresaFormNfceIdCsc.trim(),
+        apiUrl: empresaFormNfceApiUrl.trim(),
+        certificadoBase64: empresaFormNfceCertificadoBase64,
+        certificadoSenha: empresaFormNfceCertificadoSenha
       } : undefined
     };
 
@@ -414,6 +455,19 @@ export default function App() {
     setEmpresaFormPixNome(empresa.pixConfig?.nomeRecebedor || '');
     setEmpresaFormPixCidade(empresa.pixConfig?.cidadeRecebedor || '');
     setActiveTab('empresa');
+  };
+
+  const abrirAbaNfce = () => {
+    setEmpresaFormNfceAmbiente(empresa.nfceConfig?.ambiente || 'homologacao');
+    setEmpresaFormNfceUf(empresa.nfceConfig?.uf || '');
+    setEmpresaFormNfceCnpj(empresa.nfceConfig?.cnpj || '');
+    setEmpresaFormNfceIe(empresa.nfceConfig?.inscricaoEstadual || '');
+    setEmpresaFormNfceCsc(empresa.nfceConfig?.csc || '');
+    setEmpresaFormNfceIdCsc(empresa.nfceConfig?.idCsc || '');
+    setEmpresaFormNfceApiUrl(empresa.nfceConfig?.apiUrl || '');
+    setEmpresaFormNfceCertificadoBase64(empresa.nfceConfig?.certificadoBase64 || '');
+    setEmpresaFormNfceCertificadoSenha(empresa.nfceConfig?.certificadoSenha || '');
+    setActiveTab('nfce');
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -656,6 +710,34 @@ export default function App() {
       }
     } catch (err) {
       mostrarFeedback('Erro de conexão ao processar venda.', 'error');
+    }
+  };
+
+  const handleEmitirNfce = async (vendaId: string) => {
+    mostrarFeedback('Emitindo NFC-e, aguarde...', 'info');
+    try {
+      const res = await fetch('/api/nfce/emitir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendaId })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.sucesso) {
+        mostrarFeedback('NFC-e Autorizada com sucesso!');
+        // Atualizar a vendaRecente localmente
+        if (vendaRecente && vendaRecente.id === vendaId) {
+          setVendaRecente({ ...vendaRecente, nfce_status: data.status, nfce_chave: data.chave });
+        }
+        // Atualizar lista de histórico de vendas
+        const vendasRefresh = await fetch('/api/vendas').then(r => r.json());
+        setHistoricoVendas(vendasRefresh);
+      } else {
+        mostrarFeedback(`Rejeição NFC-e: ${data.error || 'Erro desconhecido'}`, 'error');
+      }
+    } catch (err: any) {
+      mostrarFeedback('Erro de conexão ao emitir NFC-e: ' + err.message, 'error');
     }
   };
 
@@ -1112,6 +1194,18 @@ export default function App() {
             >
               <Printer className="w-4 h-4 text-amber-500" />
               Impressora
+            </button>
+            <button
+              onClick={abrirAbaNfce}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'nfce'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-nfce"
+            >
+              <FileText className="w-4 h-4 text-amber-500" />
+              NFC-e / ACBr
             </button>
           </nav>
 
@@ -2056,6 +2150,16 @@ export default function App() {
                                       {v.comandaIdentificador}
                                     </span>
                                   )}
+                                  {v.nfce_status === 'AUTORIZADO' && (
+                                    <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1 py-0.2 rounded font-bold" title="NFC-e Autorizada">
+                                      NFC-e
+                                    </span>
+                                  )}
+                                  {v.nfce_status === 'REJEITADO' && (
+                                    <span className="text-[9px] bg-rose-500/10 text-rose-400 border border-rose-500/20 px-1 py-0.2 rounded font-bold" title="NFC-e Rejeitada">
+                                      NFC-e Erro
+                                    </span>
+                                  )}
                                 </div>
                                 <span className="text-[11px] font-semibold text-zinc-400 block">
                                   Forma: {v.formaPagamento}
@@ -2590,6 +2694,164 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            {/* 7. TAB DE CONFIGURAÇÕES FISCAIS (NFC-e) */}
+            {activeTab === 'nfce' && (
+              <div className="flex flex-col lg:flex-row gap-6 animate-fadeIn" id="nfce-tab-container">
+                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-xl p-6 shadow-md" id="nfce-form-card">
+                  <div className="flex items-center gap-2.5 mb-6 border-b border-zinc-800/60 pb-3">
+                    <FileText className="w-5 h-5 text-amber-400" />
+                    <div>
+                      <h3 className="font-bold text-zinc-100 text-base">Integração Fiscal NFC-e (ACBr)</h3>
+                      <p className="text-xs text-zinc-400">Configure as credenciais e o certificado para emissão do Cupom Fiscal Eletrônico.</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={salvarEmpresaForm} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Ambiente Sefaz</label>
+                        <select
+                          value={empresaFormNfceAmbiente}
+                          onChange={(e) => setEmpresaFormNfceAmbiente(e.target.value as any)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors cursor-pointer"
+                        >
+                          <option value="homologacao">Homologação (Testes)</option>
+                          <option value="producao">Produção (Validade Jurídica)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Estado (UF)</label>
+                        <input
+                          type="text"
+                          maxLength={2}
+                          value={empresaFormNfceUf}
+                          onChange={(e) => setEmpresaFormNfceUf(e.target.value.toUpperCase())}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors uppercase"
+                          placeholder="Ex: SP"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">CNPJ Emissor</label>
+                        <input
+                          type="text"
+                          value={empresaFormNfceCnpj}
+                          onChange={(e) => setEmpresaFormNfceCnpj(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="00.000.000/0001-00"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Inscrição Estadual</label>
+                        <input
+                          type="text"
+                          value={empresaFormNfceIe}
+                          onChange={(e) => setEmpresaFormNfceIe(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Número IE"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Código de Segurança (CSC)</label>
+                        <input
+                          type="text"
+                          value={empresaFormNfceCsc}
+                          onChange={(e) => setEmpresaFormNfceCsc(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Código Alfanumérico"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">ID do CSC</label>
+                        <input
+                          type="text"
+                          value={empresaFormNfceIdCsc}
+                          onChange={(e) => setEmpresaFormNfceIdCsc(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Ex: 000001"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-zinc-800/80">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">URL Servidor ACBr (REST)</label>
+                        <input
+                          type="url"
+                          value={empresaFormNfceApiUrl}
+                          onChange={(e) => setEmpresaFormNfceApiUrl(e.target.value)}
+                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          placeholder="Ex: http://localhost:8080"
+                        />
+                        <p className="text-[10px] text-zinc-500 mt-1">Endereço onde o ACBrMonitorPLUS ou API ACBr está escutando.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Certificado A1 (.pfx / .p12)</label>
+                          <label className="flex items-center justify-center gap-2 w-full bg-[#1E1E22] border border-dashed border-zinc-700 hover:border-amber-500 rounded-lg px-3 py-2.5 text-sm text-zinc-400 cursor-pointer transition-colors">
+                            <Upload className="w-4 h-4" />
+                            {empresaFormNfceCertificadoBase64 ? 'Certificado Carregado' : 'Procurar Certificado'}
+                            <input
+                              type="file"
+                              accept=".pfx,.p12"
+                              onChange={handleCertificadoUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Senha do Certificado</label>
+                          <input
+                            type="password"
+                            value={empresaFormNfceCertificadoSenha}
+                            onChange={(e) => setEmpresaFormNfceCertificadoSenha(e.target.value)}
+                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            placeholder="Senha do PFX"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4 mt-4 border-t border-zinc-800/80">
+                      <button
+                        type="submit"
+                        className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-5 py-2.5 rounded-lg font-bold text-sm cursor-pointer shadow-md transition-colors"
+                      >
+                        <Check className="w-4 h-4" />
+                        Salvar Configurações Fiscais
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="w-full lg:w-[380px] bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-4">
+                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800/60 pb-2">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span>Emissão de NFC-e</span>
+                  </div>
+
+                  <div className="space-y-4 text-xs text-zinc-300 leading-relaxed">
+                    <p>
+                      Para que a emissão da nota fiscal funcione, é necessário um servidor rodando a <strong>API do ACBr</strong> acessível por esta aplicação.
+                    </p>
+                    <p>
+                      O certificado será carregado e armazenado de forma segura na nuvem, sendo enviado no payload (Base64) durante o comando de emissão ao ACBr.
+                    </p>
+                    <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg">
+                      <strong className="block mb-1">Atenção ao CSC:</strong>
+                      Para emissão em ambiente de produção (notas reais), é imprescindível que o Código de Segurança do Contribuinte (CSC) e seu ID estejam corretos, caso contrário as notas serão rejeitadas.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -2890,15 +3152,32 @@ export default function App() {
 
             {/* Rodapé Cupom */}
             <div className="p-3 bg-[#0A0A0B] border-t border-zinc-800 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => handleAbrirSimuladorImpressao('cupom', vendaRecente.comandaIdentificador || `Venda Direta Nº ${vendaRecente.id}`, vendaRecente.itens, vendaRecente.data, vendaRecente.id)}
-                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 text-xs font-bold px-3.5 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors"
-                id="btn-imprimir-cupom"
-              >
-                <Printer className="w-3.5 h-3.5 text-amber-500" />
-                Imprimir Pedido
-              </button>
+              <div className="flex gap-2 w-full flex-wrap justify-end">
+                {empresa.nfceConfig?.apiUrl && (
+                  <button
+                    type="button"
+                    onClick={() => handleEmitirNfce(vendaRecente.id)}
+                    disabled={vendaRecente.nfce_status === 'AUTORIZADO'}
+                    className={`text-xs font-bold px-3.5 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors ${
+                      vendaRecente.nfce_status === 'AUTORIZADO'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    {vendaRecente.nfce_status === 'AUTORIZADO' ? 'NFC-e Emitida' : 'Emitir NFC-e'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleAbrirSimuladorImpressao('cupom', vendaRecente.comandaIdentificador || `Venda Direta Nº ${vendaRecente.id}`, vendaRecente.itens, vendaRecente.data, vendaRecente.id)}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 text-xs font-bold px-3.5 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors"
+                  id="btn-imprimir-cupom"
+                >
+                  <Printer className="w-3.5 h-3.5 text-amber-500" />
+                  Imprimir Pedido
+                </button>
+              </div>
               <button
                 onClick={() => setShowCupomModal(false)}
                 className="bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-4 py-2 rounded-lg cursor-pointer"

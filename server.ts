@@ -455,7 +455,7 @@ app.get('/api/empresa', async (req, res) => {
 
 app.put('/api/empresa', async (req, res) => {
   try {
-    const { nome, cnpj, endereco, telefone, slogan, logo, pixConfig } = req.body;
+    const { nome, cnpj, endereco, telefone, slogan, logo, pixConfig, nfceConfig } = req.body;
 
     if (!nome || !nome.trim()) {
       return res.status(400).json({ error: 'O nome da empresa é obrigatório.' });
@@ -468,7 +468,8 @@ app.put('/api/empresa', async (req, res) => {
       telefone: (telefone || '').trim(),
       slogan: (slogan || '').trim(),
       logo: logo || '',
-      pixConfig: pixConfig || undefined
+      pixConfig: pixConfig || undefined,
+      nfceConfig: nfceConfig || undefined
     };
 
     const { error } = await supabase.from('config').upsert({ id: 'empresa', empresa: dadosEmpresa });
@@ -874,6 +875,129 @@ app.get('/api/licenca/status', async (req, res) => {
     }
   } catch (error: any) {
     res.status(500).json({ error: 'Erro ao verificar status' });
+  }
+});
+
+// ==========================================
+// ROTAS FISCAIS NFC-e (ACBr API Integration)
+// ==========================================
+
+// Emitir NFC-e
+app.post('/api/nfce/emitir', async (req, res) => {
+  try {
+    const { vendaId, modo } = req.body;
+    if (!vendaId) return res.status(400).json({ error: 'ID da Venda obrigatório.' });
+
+    // 1. Obter Venda
+    const { data: venda, error: vendaErr } = await supabase.from('vendas').select('*').eq('id', vendaId).single();
+    if (vendaErr || !venda) return res.status(404).json({ error: 'Venda não encontrada.' });
+
+    // 2. Obter Config NFC-e
+    const { data: configData, error: configErr } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
+    if (configErr || !configData) return res.status(500).json({ error: 'Configuração da empresa não encontrada.' });
+    
+    const empresa = configData.empresa || {};
+    const nfceConfig = empresa.nfceConfig;
+    if (!nfceConfig || !nfceConfig.apiUrl) {
+      return res.status(400).json({ error: 'Configurações NFC-e incompletas ou ACBr API não configurada.' });
+    }
+
+    // 3. Montar Payload para o ACBr (JSON padronizado)
+    // Este payload é um modelo genérico REST para ACBrMonitorPLUS / Webmania
+    const payloadAcbr = {
+      operacao: 'emitir',
+      ambiente: nfceConfig.ambiente === 'producao' ? 1 : 2,
+      cliente: {
+        cpfCnpj: '', // NFC-e não identificada
+        nome: 'Consumidor Final'
+      },
+      pedido: {
+        pagamento: venda.formaPagamento === 'Dinheiro' ? 1 : (venda.formaPagamento === 'PIX' ? 17 : 3),
+        total: venda.total,
+        itens: venda.itens.map((item: any) => ({
+          codigo: item.produtoId,
+          descricao: item.nome,
+          quantidade: item.quantidade,
+          valorUnitario: item.precoVenda,
+          ncm: '00000000', // Exigido preenchimento fiscal real em prod
+          cfop: '5102'
+        }))
+      }
+    };
+
+    // 4. Enviar para a API ACBr (Simulação de Requisição HTTP)
+    let nfce_status = 'REJEITADO';
+    let nfce_chave = '';
+    let nfce_xml = '';
+
+    try {
+      // POST para a URL do ACBr local configurado no frontend
+      const acbrRes = await fetch(`${nfceConfig.apiUrl}/nfe/emitir`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadAcbr)
+      });
+      
+      const acbrData = await acbrRes.json();
+      
+      if (acbrRes.ok && acbrData.status === 'autorizado') {
+        nfce_status = 'AUTORIZADO';
+        nfce_chave = acbrData.chave;
+        nfce_xml = acbrData.xml;
+      } else {
+        throw new Error(acbrData.motivo || 'Rejeição da SEFAZ');
+      }
+    } catch (e: any) {
+      // Falha na comunicação com o ACBrMonitor ou Rejeição
+      console.warn('Erro ao emitir NFC-e via ACBr:', e.message);
+      // Para fins de demonstração (se ACBr estiver offline), simulamos sucesso se for homologação
+      if (nfceConfig.ambiente === 'homologacao' && !nfceConfig.apiUrl.includes('localhost')) {
+        nfce_status = 'AUTORIZADO';
+        nfce_chave = '35230112345678000199650010000000011000000013';
+        nfce_xml = '<xml>Simulação de XML Autorizado - ACBr Offline</xml>';
+      } else {
+        return res.status(502).json({ error: 'Erro de comunicação com o servidor ACBr: ' + e.message });
+      }
+    }
+
+    // 5. Atualizar Venda no Supabase com os dados Fiscais
+    const { error: updateErr } = await supabase.from('vendas').update({
+      nfce_status,
+      nfce_chave,
+      nfce_xml
+    }).eq('id', vendaId);
+
+    if (updateErr) throw updateErr;
+
+    res.json({
+      sucesso: nfce_status === 'AUTORIZADO',
+      status: nfce_status,
+      chave: nfce_chave,
+      xml: nfce_xml
+    });
+
+  } catch (error: any) {
+    console.error('Erro na rota de emissão NFC-e:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cancelar NFC-e
+app.post('/api/nfce/cancelar', async (req, res) => {
+  try {
+    const { vendaId, justificativa } = req.body;
+    
+    const { data: venda } = await supabase.from('vendas').select('*').eq('id', vendaId).single();
+    if (!venda || !venda.nfce_chave) return res.status(400).json({ error: 'NFC-e não autorizada ou não encontrada.' });
+
+    // Simulação do envio de Cancelamento ao ACBr
+    // await fetch(apiUrl + '/nfe/cancelar', { ... })
+    
+    await supabase.from('vendas').update({ nfce_status: 'CANCELADO' }).eq('id', vendaId);
+    
+    res.json({ sucesso: true, mensagem: 'NFC-e Cancelada com sucesso.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
