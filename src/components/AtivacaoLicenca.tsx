@@ -121,6 +121,15 @@ export function AtivacaoLicenca({ onSuccess, validadeAtual }: AtivacaoLicencaPro
             </div>
           </form>
         )}
+
+        <div className="text-center mt-6 flex flex-col items-center gap-1">
+          <p className="text-xs text-gray-500 font-medium">
+            Sistema PDV Seguro &copy; {new Date().getFullYear()}
+          </p>
+          <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase mt-2">
+            Desenvolvido por <a href="https://github.com/levisite-cloud" target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:text-amber-400 transition-colors">Levisite Cloud</a>
+          </p>
+        </div>
       </div>
     </div>
   );
