@@ -1691,15 +1691,16 @@ export default function App() {
                               Salvar Parcial
                             </button>
                             
-                            {carrinho.length > 0 && (
+                            {((comandas.find(c => c.id === comandaSelecionadaId)?.itens?.length || 0) + carrinho.length) > 0 && (
                               <button
                                 type="button"
                                 onClick={() => {
                                   const selectedComanda = comandas.find(c => c.id === comandaSelecionadaId);
+                                  const todosItens = [...(selectedComanda?.itens || []), ...carrinho];
                                   handleAbrirSimuladorImpressao(
                                     'conferencia',
                                     selectedComanda?.identificador || 'Comanda',
-                                    carrinho,
+                                    todosItens,
                                     new Date().toISOString(),
                                     comandaSelecionadaId
                                   );
