@@ -155,6 +155,7 @@ export default function App() {
   const [empresaFormPixNome, setEmpresaFormPixNome] = useState<string>('');
   const [empresaFormPixCidade, setEmpresaFormPixCidade] = useState<string>('');
   const [gerarPixQR, setGerarPixQR] = useState<boolean>(false);
+  const [showPixModal, setShowPixModal] = useState<boolean>(false);
 
   // Estados de Configuração de Impressão
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>({
@@ -1431,7 +1432,14 @@ export default function App() {
                               <button
                                 key={forma}
                                 type="button"
-                                onClick={() => setFormaPagamento(forma)}
+                                onClick={() => {
+                                  setFormaPagamento(forma);
+                                  if (forma === 'PIX' && !gerarPixQR && empresa.pixConfig?.chave) {
+                                    setShowPixModal(true);
+                                  } else if (forma !== 'PIX') {
+                                    setGerarPixQR(false);
+                                  }
+                                }}
                                 className={`p-2 flex flex-col items-center justify-center gap-1.5 border rounded-lg text-[10px] font-bold text-center transition-all cursor-pointer ${
                                   formaPagamento === forma
                                     ? 'bg-amber-500 text-zinc-950 border-amber-500 shadow-md font-bold'
@@ -1478,33 +1486,7 @@ export default function App() {
                               </p>
                             ) : (
                               <>
-                                <label className="text-[11px] text-zinc-300 font-bold block mb-2 uppercase tracking-wider text-center">Gerar QR Code PIX?</label>
-                                <div className="flex gap-2 mb-3 w-full max-w-[200px]">
-                                  <button
-                                    type="button"
-                                    onClick={() => setGerarPixQR(true)}
-                                    className={`flex-1 py-1.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
-                                      gerarPixQR
-                                        ? 'bg-teal-500 text-zinc-950 border-teal-500'
-                                        : 'bg-[#121214] text-teal-400 border-zinc-700 hover:border-teal-500/50'
-                                    }`}
-                                  >
-                                    Sim
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setGerarPixQR(false)}
-                                    className={`flex-1 py-1.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
-                                      !gerarPixQR
-                                        ? 'bg-zinc-700 text-zinc-100 border-zinc-600'
-                                        : 'bg-[#121214] text-zinc-400 border-zinc-700 hover:border-zinc-500'
-                                    }`}
-                                  >
-                                    Não
-                                  </button>
-                                </div>
-
-                                {gerarPixQR && totalCarrinho > 0 && (() => {
+                                {gerarPixQR && totalCarrinho > 0 ? (() => {
                                   // Em um App React real, não importariamos inline, mas o vite/esbuild lida bem se importarmos no topo do arquivo.
                                   // Para evitar erro de referência se a importação não for feita no topo, vou calcular a string aqui via função importada ou chamar o gerador.
                                   // A importação será feita no topo do arquivo.
@@ -1550,7 +1532,18 @@ export default function App() {
                                       </div>
                                     </div>
                                   );
-                                })()}
+                                })() : (
+                                  <div className="flex flex-col items-center text-center">
+                                    <QrCode className="w-6 h-6 text-zinc-600 mb-2" />
+                                    <p className="text-xs text-zinc-400 font-medium">Pagamento via PIX selecionado.</p>
+                                    <button 
+                                      onClick={() => setShowPixModal(true)}
+                                      className="mt-3 px-4 py-1.5 bg-teal-500/10 text-teal-400 rounded hover:bg-teal-500/20 text-[10px] font-bold transition-colors border border-teal-500/20"
+                                    >
+                                      Gerar QR Code Novamente
+                                    </button>
+                                  </div>
+                                )}
                               </>
                             )}
                           </div>
@@ -3083,6 +3076,40 @@ export default function App() {
               </p>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO PIX */}
+      {showPixModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#18181B] border border-zinc-800 rounded-xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center animate-scaleIn">
+            <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center mb-4">
+              <QrCode className="w-6 h-6 text-teal-400" />
+            </div>
+            <h3 className="text-lg font-bold text-zinc-100 mb-2 text-center">Confirmação de Geração do QR Code PIX</h3>
+            <p className="text-sm text-zinc-400 mb-6 text-center">Deseja gerar o QR Code PIX para este pagamento?</p>
+            
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => {
+                  setGerarPixQR(false);
+                  setShowPixModal(false);
+                }}
+                className="flex-1 py-2.5 rounded-lg text-sm font-bold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors cursor-pointer"
+              >
+                Não
+              </button>
+              <button
+                onClick={() => {
+                  setGerarPixQR(true);
+                  setShowPixModal(false);
+                }}
+                className="flex-1 py-2.5 rounded-lg text-sm font-bold bg-teal-500 text-zinc-950 hover:bg-teal-400 shadow-[0_0_15px_rgba(20,184,166,0.3)] transition-colors cursor-pointer"
+              >
+                Sim
+              </button>
+            </div>
           </div>
         </div>
       )}
