@@ -61,16 +61,20 @@ app.post('/api/produtos', async (req, res) => {
     }
 
     const id = Math.random().toString(36).substring(2, 9);
-    const novoProduto: Produto = {
+    const novoProduto: any = {
       id,
       nome,
       categoria,
       precoCusto: Number(precoCusto),
       precoVenda: Number(precoVenda),
       estoque: controlarEstoque ? Number(estoque || 0) : 0,
-      controlarEstoque: Boolean(controlarEstoque),
-      estoqueMinimo: estoqueMinimo !== undefined ? Number(estoqueMinimo) : undefined
+      controlarEstoque: Boolean(controlarEstoque)
     };
+    if (estoqueMinimo !== undefined) {
+      novoProduto.estoqueMinimo = Number(estoqueMinimo);
+    } else {
+      novoProduto.estoqueMinimo = null;
+    }
 
     const { error } = await supabase.from('produtos').insert([novoProduto]);
     if (error) throw error;
@@ -103,7 +107,7 @@ app.put('/api/produtos/:id', async (req, res) => {
       precoVenda: updateData.precoVenda !== undefined ? Number(updateData.precoVenda) : pOriginal.precoVenda,
       estoque: updateData.controlarEstoque !== undefined ? (Boolean(updateData.controlarEstoque) ? Number(updateData.estoque || 0) : 0) : pOriginal.estoque,
       controlarEstoque: updateData.controlarEstoque !== undefined ? Boolean(updateData.controlarEstoque) : pOriginal.controlarEstoque,
-      estoqueMinimo: updateData.estoqueMinimo !== undefined ? Number(updateData.estoqueMinimo) : pOriginal.estoqueMinimo
+      estoqueMinimo: updateData.estoqueMinimo !== undefined ? (updateData.estoqueMinimo === null ? null : Number(updateData.estoqueMinimo)) : pOriginal.estoqueMinimo
     };
 
     const { error: updateError } = await supabase.from('produtos').update(produtoAtualizado).eq('id', id);

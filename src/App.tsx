@@ -758,7 +758,7 @@ export default function App() {
       precoVenda: Number(prodFormPrecoVenda),
       estoque: prodFormControlarEstoque ? Number(prodFormEstoque) : 0,
       controlarEstoque: prodFormControlarEstoque,
-      estoqueMinimo: prodFormControlarEstoque ? Number(prodFormEstoqueMinimo) : undefined
+      estoqueMinimo: prodFormControlarEstoque ? Number(prodFormEstoqueMinimo) : null
     };
 
     try {
