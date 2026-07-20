@@ -1015,11 +1015,11 @@ export default function App() {
             </form>
           </div>
           
-          <div className="text-center mt-8 flex flex-col items-center gap-1">
-            <p className="text-xs text-zinc-600 font-medium">
-              Sistema PDV Seguro &copy; {new Date().getFullYear()}
+          <div className="text-center mt-8 flex flex-col items-center gap-1.5">
+            <p className="text-xs text-zinc-500 font-medium flex items-center justify-center gap-2">
+              Sistema PDV Seguro <span className="bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded text-[9px] font-bold">v1.0.0</span>
             </p>
-            <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase mt-2">
+            <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase mt-1">
               Desenvolvido por <a href="https://github.com/levisite-cloud" target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:text-amber-400 transition-colors">Levisite Cloud</a>
             </p>
           </div>
