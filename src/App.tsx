@@ -1159,7 +1159,7 @@ export default function App() {
               id="tab-produtos"
             >
               <Package className="w-4 h-4" />
-              Gerenciar Produtos
+              Produtos
             </button>
             <button
               onClick={() => {
