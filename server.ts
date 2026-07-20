@@ -390,7 +390,7 @@ app.get('/api/empresa', async (req, res) => {
 
 app.put('/api/empresa', async (req, res) => {
   try {
-    const { nome, cnpj, endereco, telefone, slogan, logo } = req.body;
+    const { nome, cnpj, endereco, telefone, slogan, logo, pixConfig } = req.body;
 
     if (!nome || !nome.trim()) {
       return res.status(400).json({ error: 'O nome da empresa é obrigatório.' });
@@ -402,7 +402,8 @@ app.put('/api/empresa', async (req, res) => {
       endereco: (endereco || '').trim(),
       telefone: (telefone || '').trim(),
       slogan: (slogan || '').trim(),
-      logo: logo || ''
+      logo: logo || '',
+      pixConfig: pixConfig || undefined
     };
 
     const { error } = await supabase.from('config').upsert({ id: 'empresa', empresa: dadosEmpresa });
