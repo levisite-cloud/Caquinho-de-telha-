@@ -769,7 +769,7 @@ export default function App() {
   };
 
   const handleEmitirNfce = async (vendaId: string) => {
-    mostrarFeedback('Emitindo NFC-e, aguarde...', 'info');
+    mostrarFeedback('Emitindo NFC-e, aguarde...');
     try {
       const res = await fetch('/api/nfce/emitir', {
         method: 'POST',
@@ -785,9 +785,8 @@ export default function App() {
         if (vendaRecente && vendaRecente.id === vendaId) {
           setVendaRecente({ ...vendaRecente, nfce_status: data.status, nfce_chave: data.chave });
         }
-        // Atualizar lista de histórico de vendas
-        const vendasRefresh = await fetch('/api/vendas').then(r => r.json());
-        setHistoricoVendas(vendasRefresh);
+        // Atualizar relatórios e histórico
+        carregarRelatorios();
       } else {
         mostrarFeedback(`Rejeição NFC-e: ${data.error || 'Erro desconhecido'}`, 'error');
       }
