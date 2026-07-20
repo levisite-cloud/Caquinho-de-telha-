@@ -209,7 +209,7 @@ export default function App() {
   const [isSimulandoImpressao, setIsSimulandoImpressao] = useState<boolean>(false);
 
   const handleAbrirSimuladorImpressao = (
-    tipo: 'cozinha' | 'cupom',
+    tipo: 'cozinha' | 'cupom' | 'conferencia',
     identificador: string,
     itens: { nome: string; quantidade: number; precoVenda?: number }[],
     data: string,
@@ -234,7 +234,13 @@ export default function App() {
     
     setIsSimulandoImpressao(true);
     
-    const cabecalho = dadosImpressao.tipo === 'cozinha' ? 'PEDIDO DE COZINHA' : 'CUPOM DE VENDA';
+    let cabecalho = 'CUPOM DE VENDA';
+    if (dadosImpressao.tipo === 'cozinha') {
+      cabecalho = 'PEDIDO DE COZINHA';
+    } else if (dadosImpressao.tipo === 'conferencia') {
+      cabecalho = 'COMANDA PARA CONFERENCIA - SEM VALOR FISCAL';
+    }
+
     const nomeEmpresa = (empresa.nome || 'Sabor Gourmet').toUpperCase();
     let txt = `======================================\n`;
     txt += ` ${nomeEmpresa.padStart(Math.max(0, Math.floor((36 - nomeEmpresa.length) / 2)) + nomeEmpresa.length).padEnd(36, ' ')} \n`;
@@ -250,10 +256,22 @@ export default function App() {
     txt += `QTD    DESCRIÇÃO DO ITEM\n`;
     txt += `--------------------------------------\n`;
     
+    let totalConferencia = 0;
     dadosImpressao.itens.forEach(item => {
       const qtdStr = `${item.quantidade}x`.padEnd(6, ' ');
-      txt += `${qtdStr} ${item.nome}\n`;
+      if (dadosImpressao.tipo === 'conferencia' && item.precoVenda !== undefined) {
+        const sub = item.quantidade * item.precoVenda;
+        totalConferencia += sub;
+        txt += `${qtdStr} ${item.nome.padEnd(20, ' ').substring(0, 20)} R$ ${sub.toFixed(2)}\n`;
+      } else {
+        txt += `${qtdStr} ${item.nome}\n`;
+      }
     });
+
+    if (dadosImpressao.tipo === 'conferencia') {
+      txt += `--------------------------------------\n`;
+      txt += `TOTAL A PAGAR: R$ ${totalConferencia.toFixed(2)}\n`;
+    }
     
     if (incluirObservacao && observacaoTexto.trim()) {
       txt += `--------------------------------------\n`;
@@ -1661,17 +1679,40 @@ export default function App() {
                       </div>
 
                       {/* Botões de Ação Final */}
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2">
                         {modoVenda === 'comanda' && comandaSelecionadaId && (
-                          <>
+                          <div className="flex gap-2 w-full">
                             <button
                               type="button"
                               onClick={salvarItensNaComanda}
                               className="flex-1 bg-[#1E1E22] hover:bg-[#25252A] text-zinc-200 border border-zinc-800 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                               id="btn-salvar-comanda"
                             >
-                              Salvar na Comanda
+                              Salvar Parcial
                             </button>
+                            
+                            {carrinho.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const selectedComanda = comandas.find(c => c.id === comandaSelecionadaId);
+                                  handleAbrirSimuladorImpressao(
+                                    'conferencia',
+                                    selectedComanda?.identificador || 'Comanda',
+                                    carrinho,
+                                    new Date().toISOString(),
+                                    comandaSelecionadaId
+                                  );
+                                }}
+                                className="bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 px-3 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                id="btn-imprimir-conferencia"
+                                title="Imprimir Conferência"
+                              >
+                                <Receipt className="w-4 h-4 text-zinc-300 shrink-0" />
+                                <span className="hidden lg:inline">Conferência</span>
+                              </button>
+                            )}
+
                             {carrinho.length > 0 && (
                               <button
                                 type="button"
@@ -1685,21 +1726,21 @@ export default function App() {
                                     comandaSelecionadaId
                                   );
                                 }}
-                                className="bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 px-3.5 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                className="bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 px-3 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                 id="btn-imprimir-carrinho"
                                 title="Imprimir comanda atual para a cozinha"
                               >
                                 <Printer className="w-4 h-4 text-amber-500 shrink-0" />
                               </button>
                             )}
-                          </>
+                          </div>
                         )}
 
                         <button
                           type="button"
                           onClick={finalizarVenda}
                           disabled={carrinho.length === 0}
-                          className={`flex-2 py-3 rounded-lg text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                          className={`w-full py-3 rounded-lg text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                             carrinho.length === 0
                               ? 'bg-[#1E1E22] text-zinc-600 cursor-not-allowed border border-zinc-800/50'
                               : 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-md hover:shadow-lg'
