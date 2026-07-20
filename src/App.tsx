@@ -294,6 +294,34 @@ export default function App() {
     txt += `         CUPOM DE IMPRESSÃO           \n`;
     txt += `======================================\n`;
 
+    // 1. Gerar janela para impressão ou salvar em PDF (Nativo do navegador)
+    try {
+      const printWindow = window.open('', '_blank', 'width=400,height=600');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Impressão PDV</title>
+              <style>
+                @page { margin: 0; }
+                body { margin: 15px; font-family: monospace; font-size: 14px; white-space: pre-wrap; width: 300px; color: #000; background: #fff; }
+              </style>
+            </head>
+            <body>${txt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      }
+    } catch (err) {
+      console.warn('Bloqueador de pop-ups pode ter impedido a impressão nativa:', err);
+    }
+
+    // 2. Continua o fluxo simulado de enviar para o servidor
     try {
       const response = await fetch('/api/imprimir', {
         method: 'POST',
