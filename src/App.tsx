@@ -1288,7 +1288,7 @@ export default function App() {
                   </div>
 
                   {/* Grid de Produtos */}
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 overflow-y-auto min-h-[300px] lg:h-[calc(100vh-290px)] pr-1" id="pdv-products-grid">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 overflow-y-auto min-h-[300px] lg:h-[calc(100vh-290px)] pr-1" id="pdv-products-grid">
                     {produtosFiltrados.length === 0 ? (
                       <div className="col-span-full bg-[#121214] border border-zinc-800 rounded-xl p-10 text-center text-zinc-400" id="no-products-found">
                         <Coffee className="w-10 h-10 mx-auto text-zinc-600 mb-2" />
@@ -1307,24 +1307,24 @@ export default function App() {
                           <div
                             key={produto.id}
                             onClick={() => adicionarAoCarrinho(produto)}
-                            className={`bg-[#121214] border hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/[0.03] hover:-translate-y-0.5 rounded-xl p-2.5 flex flex-col justify-between transition-all duration-200 cursor-pointer text-left relative group ${
+                            className={`bg-[#121214] border hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/[0.03] hover:-translate-y-0.5 rounded-xl p-3 flex flex-col justify-between transition-all duration-200 cursor-pointer text-left relative group ${
                               esgotado ? 'opacity-60 border-rose-950/50 bg-rose-950/5' : 'border-zinc-800'
                             }`}
                             id={`produto-card-${produto.id}`}
                           >
                             <div>
-                              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide line-clamp-1">
+                              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide line-clamp-1">
                                 {produto.categoria}
                               </span>
-                              <h3 className="text-xs font-semibold text-zinc-200 mt-1 leading-snug group-hover:text-amber-400 transition-colors line-clamp-2">
+                              <h3 className="text-sm font-semibold text-zinc-200 mt-1 leading-snug group-hover:text-amber-400 transition-colors line-clamp-2">
                                 {produto.nome}
                               </h3>
                             </div>
 
-                            <div className="mt-3 flex justify-between items-end">
+                            <div className="mt-4 flex justify-between items-end">
                               <div>
-                                <p className="text-[9px] text-zinc-400 leading-none mb-0.5">Preço</p>
-                                <p className="text-sm font-extrabold text-amber-400 font-mono leading-none">
+                                <p className="text-[10px] text-zinc-400 leading-none mb-1">Preço</p>
+                                <p className="text-base font-extrabold text-amber-400 font-mono leading-none">
                                   R$ {produto.precoVenda.toFixed(2)}
                                 </p>
                               </div>
