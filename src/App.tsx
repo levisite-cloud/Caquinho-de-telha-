@@ -1123,7 +1123,7 @@ export default function App() {
               }`}
               id="tab-pdv"
             >
-              <Receipt className="w-4 h-4" />
+              <Receipt className={`w-4 h-4 ${activeTab === 'pdv' ? 'text-zinc-950' : 'text-amber-500'}`} />
               PDV (Frente de Caixa)
             </button>
             <button
@@ -1138,7 +1138,7 @@ export default function App() {
               }`}
               id="tab-comandas"
             >
-              <Layers className="w-4 h-4" />
+              <Layers className={`w-4 h-4 ${activeTab === 'comandas' ? 'text-zinc-950' : 'text-amber-500'}`} />
               Comandas/Mesas
               {comandas.length > 0 && (
                 <span className="bg-amber-500 text-zinc-950 text-xs font-bold px-1.5 py-0.5 rounded-full ml-1">
@@ -1158,7 +1158,7 @@ export default function App() {
               }`}
               id="tab-produtos"
             >
-              <Package className="w-4 h-4" />
+              <Package className={`w-4 h-4 ${activeTab === 'produtos' ? 'text-zinc-950' : 'text-amber-500'}`} />
               Produtos
             </button>
             <button
@@ -1173,7 +1173,7 @@ export default function App() {
               }`}
               id="tab-relatorios"
             >
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className={`w-4 h-4 ${activeTab === 'relatorios' ? 'text-zinc-950' : 'text-amber-500'}`} />
               Fechamento
             </button>
             <button
@@ -1185,7 +1185,7 @@ export default function App() {
               }`}
               id="tab-empresa"
             >
-              <Store className="w-4 h-4 text-amber-500" />
+              <Store className={`w-4 h-4 ${activeTab === 'empresa' ? 'text-zinc-950' : 'text-amber-500'}`} />
               Dados da Empresa
             </button>
             <button
@@ -1197,7 +1197,7 @@ export default function App() {
               }`}
               id="tab-impressoras"
             >
-              <Printer className="w-4 h-4 text-amber-500" />
+              <Printer className={`w-4 h-4 ${activeTab === 'impressoras' ? 'text-zinc-950' : 'text-amber-500'}`} />
               Impressora
             </button>
             <button
@@ -1209,7 +1209,7 @@ export default function App() {
               }`}
               id="tab-nfce"
             >
-              <FileText className="w-4 h-4 text-amber-500" />
+              <FileText className={`w-4 h-4 ${activeTab === 'nfce' ? 'text-zinc-950' : 'text-amber-500'}`} />
               NFC-e / ACBr
             </button>
           </nav>
