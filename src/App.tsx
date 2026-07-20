@@ -786,7 +786,7 @@ export default function App() {
           setVendaRecente({ ...vendaRecente, nfce_status: data.status, nfce_chave: data.chave });
         }
         // Atualizar relatórios e histórico
-        carregarRelatorios();
+        carregarRelatorio();
       } else {
         mostrarFeedback(`Rejeição NFC-e: ${data.error || 'Erro desconhecido'}`, 'error');
       }
