@@ -1174,7 +1174,7 @@ export default function App() {
               id="tab-relatorios"
             >
               <TrendingUp className="w-4 h-4" />
-              Fechamento & Relatório
+              Fechamento
             </button>
             <button
               onClick={abrirAbaEmpresa}
