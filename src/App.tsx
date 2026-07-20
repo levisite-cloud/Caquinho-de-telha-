@@ -28,7 +28,8 @@ import {
   Upload,
   Cloud,
   LogOut,
-  KeyRound
+  KeyRound,
+  Sparkles
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
@@ -108,6 +109,10 @@ export default function App() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [comandas, setComandas] = useState<Comanda[]>([]);
   const [relatorio, setRelatorio] = useState<any>(null);
+  const [aiInsights, setAiInsights] = useState<string>('');
+  const [loadingAi, setLoadingAi] = useState<boolean>(false);
+  const [aiSugestoes, setAiSugestoes] = useState<string>('');
+  const [loadingSugestoes, setLoadingSugestoes] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -412,6 +417,59 @@ export default function App() {
       }
     } catch (err) {
       console.error('Erro ao buscar relatório:', err);
+    }
+  };
+
+  const gerarInsights = async () => {
+    if (!relatorio) {
+      mostrarFeedback('Carregue o relatório primeiro para gerar insights.', 'error');
+      return;
+    }
+    setLoadingAi(true);
+    setAiInsights('');
+    try {
+      const res = await fetch('/api/ai/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ relatorio })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAiInsights(data.insights);
+      } else {
+        mostrarFeedback('Erro na análise da IA: ' + (data.error || ''), 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao gerar insights.', 'error');
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const gerarSugestoesUpsell = async () => {
+    if (carrinho.length === 0) {
+      mostrarFeedback('Adicione itens ao carrinho primeiro.', 'error');
+      return;
+    }
+    setLoadingSugestoes(true);
+    setAiSugestoes('');
+    try {
+      const cardapioResumo = produtos.map(p => `${p.nome} (R$ ${p.precoVenda})`).join(', ');
+      const res = await fetch('/api/ai/sugestoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ carrinho, cardapio: cardapioResumo })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAiSugestoes(data.sugestoes);
+      } else {
+        mostrarFeedback('Erro na sugestão: ' + (data.error || ''), 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro ao conectar com a IA.', 'error');
+    } finally {
+      setLoadingSugestoes(false);
     }
   };
 
@@ -1562,6 +1620,25 @@ export default function App() {
                       )}
                     </div>
 
+                    {/* Garçom IA */}
+                    {carrinho.length > 0 && (
+                      <div className="bg-[#1a1a1c] border-t border-zinc-800 p-3 flex flex-col gap-2">
+                        <button
+                          onClick={gerarSugestoesUpsell}
+                          disabled={loadingSugestoes}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-sm font-bold transition-colors"
+                        >
+                          {loadingSugestoes ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                          {loadingSugestoes ? 'Consultando IA...' : 'Dicas de Upsell 🧠'}
+                        </button>
+                        {aiSugestoes && (
+                          <div className="p-3 bg-emerald-500/5 rounded-md border border-emerald-500/10">
+                            <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-line">{aiSugestoes}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* SUB-TOTAL & FORMA DE PAGAMENTO */}
                     <div className="bg-[#161618] p-4 border-t border-zinc-800 shrink-0" id="cart-actions-container">
                       <div className="flex justify-between items-center mb-3">
@@ -2077,6 +2154,38 @@ export default function App() {
             {/* 4. TAB DE FECHAMENTO & RELATÓRIOS DO CAIXA */}
             {activeTab === 'relatorios' && (
               <div className="flex flex-col gap-5 animate-fadeIn" id="relatorios-tab-container">
+                
+                {/* Groq AI Insights */}
+                <div className="bg-[#121214] border border-emerald-500/30 p-5 rounded-xl shadow-md mb-2 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                        <Sparkles className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-zinc-100">Análise Inteligente de Vendas</h3>
+                        <p className="text-sm text-zinc-400">Gere insights estratégicos do seu faturamento com a Groq AI.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={gerarInsights}
+                      disabled={loadingAi || !relatorio}
+                      className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {loadingAi ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                      {loadingAi ? 'Analisando...' : 'Gerar Insights com IA'}
+                    </button>
+                  </div>
+                  
+                  {aiInsights && (
+                    <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-lg mt-2">
+                      <p className="text-zinc-300 whitespace-pre-line leading-relaxed text-sm md:text-base">
+                        {aiInsights}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Resumo Financeiro Cards */}
                 {relatorio && (
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4" id="metrics-grid">
