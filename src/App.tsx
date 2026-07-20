@@ -294,11 +294,15 @@ export default function App() {
     txt += `         CUPOM DE IMPRESSÃO           \n`;
     txt += `======================================\n`;
 
-    // 1. Gerar janela para impressão ou salvar em PDF (Nativo do navegador)
+    // 1. Gerar impressão via iframe invisível para evitar bloqueador de pop-ups (Funciona melhor em todos os dispositivos e não bloqueia)
     try {
-      const printWindow = window.open('', '_blank', 'width=400,height=600');
-      if (printWindow) {
-        printWindow.document.write(`
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.write(`
           <html>
             <head>
               <title>Impressão PDV</title>
@@ -310,15 +314,20 @@ export default function App() {
             <body>${txt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</body>
           </html>
         `);
-        printWindow.document.close();
-        printWindow.focus();
+        iframeDoc.close();
+        
         setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 2000); // Dá tempo para a janela de impressão do SO abrir
         }, 250);
       }
     } catch (err) {
-      console.warn('Bloqueador de pop-ups pode ter impedido a impressão nativa:', err);
+      console.error('Erro ao tentar gerar impressão nativa:', err);
     }
 
     // 2. Continua o fluxo simulado de enviar para o servidor
