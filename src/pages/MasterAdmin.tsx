@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { KeyRound, CheckCircle2, Copy, Shield, LogOut } from 'lucide-react';
+import { KeyRound, CheckCircle2, Copy, Shield, LogOut, Trash2 } from 'lucide-react';
 
 interface Licenca {
   id: string;
@@ -136,6 +136,30 @@ export function MasterAdmin() {
     alert('Código copiado!');
   };
 
+  const excluirLicenca = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja apagar esta licença permanentemente?')) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/master/licencas/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ masterPassword: password })
+      });
+
+      if (res.ok) {
+        alert('Licença excluída com sucesso!');
+        fetchLicencasEStatus(password);
+      } else {
+        alert('Erro ao excluir licença.');
+      }
+    } catch (err) {
+      alert('Erro de conexão ao excluir.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
@@ -269,6 +293,7 @@ export function MasterAdmin() {
                       <th className="px-4 py-3">Cliente</th>
                       <th className="px-4 py-3">Dias</th>
                       <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -296,6 +321,15 @@ export function MasterAdmin() {
                               Livre
                             </span>
                           )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right">
+                          <button
+                            onClick={() => excluirLicenca(lic.id)}
+                            className="text-red-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                            title="Remover Licença"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </td>
                       </tr>
                     ))}

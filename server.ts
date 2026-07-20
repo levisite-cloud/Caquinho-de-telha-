@@ -663,6 +663,27 @@ app.get('/api/master/licencas', async (req, res) => {
   }
 });
 
+// MASTER ADMIN: Excluir licença
+app.delete('/api/master/licencas/:id', async (req, res) => {
+  try {
+    const { masterPassword } = req.body; // using body for delete is unconventional, let's use query or headers, but here we can just use body since it's a proxy to a post or standard fetch.
+    // wait, fetch DELETE can have a body if we want, but it's better to use query or body. We'll support both for safety.
+    const pass = req.body.masterPassword || req.query.masterPassword;
+    if (pass !== 'Master@2026') {
+      return res.status(401).json({ error: 'Acesso Master negado.' });
+    }
+    
+    const { id } = req.params;
+    const { error } = await supabase.from('licencas').delete().eq('id', id);
+    if (error) throw error;
+    
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Erro ao excluir licença:', error);
+    res.status(500).json({ error: 'Erro ao excluir licença' });
+  }
+});
+
 // MASTER ADMIN: Desbloqueio Direto (Ignora código de licença)
 app.post('/api/master/desbloqueio-direto', async (req, res) => {
   try {
