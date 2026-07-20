@@ -1435,7 +1435,11 @@ export default function App() {
                                 onClick={() => {
                                   setFormaPagamento(forma);
                                   if (forma === 'PIX' && !gerarPixQR && empresa.pixConfig?.chave) {
-                                    setShowPixModal(true);
+                                    if (totalCarrinho > 0) {
+                                      setShowPixModal(true);
+                                    } else {
+                                      alert('Adicione itens ao carrinho ou informe um valor maior que zero para gerar o QR Code PIX.');
+                                    }
                                   } else if (forma !== 'PIX') {
                                     setGerarPixQR(false);
                                   }
@@ -1537,7 +1541,13 @@ export default function App() {
                                     <QrCode className="w-6 h-6 text-zinc-600 mb-2" />
                                     <p className="text-xs text-zinc-400 font-medium">Pagamento via PIX selecionado.</p>
                                     <button 
-                                      onClick={() => setShowPixModal(true)}
+                                      onClick={() => {
+                                        if (totalCarrinho > 0) {
+                                          setShowPixModal(true);
+                                        } else {
+                                          alert('Adicione itens ao carrinho ou informe um valor maior que zero para gerar o QR Code PIX.');
+                                        }
+                                      }}
                                       className="mt-3 px-4 py-1.5 bg-teal-500/10 text-teal-400 rounded hover:bg-teal-500/20 text-[10px] font-bold transition-colors border border-teal-500/20"
                                     >
                                       Gerar QR Code Novamente
