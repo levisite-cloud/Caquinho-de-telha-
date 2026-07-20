@@ -44,7 +44,20 @@ app.get('/api/produtos', async (req, res) => {
   try {
     const { data, error } = await supabase.from('produtos').select('*');
     if (error) throw error;
-    res.json(data);
+    
+    // Map postgres lowercase columns to camelCase expected by the frontend
+    const mappedData = data.map((p: any) => ({
+      id: p.id,
+      nome: p.nome,
+      categoria: p.categoria,
+      precoCusto: p.precocusto,
+      precoVenda: p.precovenda,
+      estoque: p.estoque,
+      controlarEstoque: p.controlarestoque,
+      estoqueMinimo: p.estoqueminimo
+    }));
+    
+    res.json(mappedData);
   } catch (error: any) {
     console.error('Erro ao listar produtos:', error);
     res.status(500).json({ error: 'Erro ao buscar produtos' });
@@ -61,25 +74,34 @@ app.post('/api/produtos', async (req, res) => {
     }
 
     const id = Math.random().toString(36).substring(2, 9);
-    const novoProduto: any = {
+    const novoProdutoDB: any = {
       id,
       nome,
       categoria,
-      precoCusto: Number(precoCusto),
-      precoVenda: Number(precoVenda),
+      precocusto: Number(precoCusto),
+      precovenda: Number(precoVenda),
       estoque: controlarEstoque ? Number(estoque || 0) : 0,
-      controlarEstoque: Boolean(controlarEstoque)
+      controlarestoque: Boolean(controlarEstoque)
     };
-    if (estoqueMinimo !== undefined) {
-      novoProduto.estoqueMinimo = Number(estoqueMinimo);
+    if (estoqueMinimo !== undefined && estoqueMinimo !== null) {
+      novoProdutoDB.estoqueminimo = Number(estoqueMinimo);
     } else {
-      novoProduto.estoqueMinimo = null;
+      novoProdutoDB.estoqueminimo = null;
     }
 
-    const { error } = await supabase.from('produtos').insert([novoProduto]);
+    const { error } = await supabase.from('produtos').insert([novoProdutoDB]);
     if (error) throw error;
 
-    res.status(201).json(novoProduto);
+    res.status(201).json({
+      id: novoProdutoDB.id,
+      nome: novoProdutoDB.nome,
+      categoria: novoProdutoDB.categoria,
+      precoCusto: novoProdutoDB.precocusto,
+      precoVenda: novoProdutoDB.precovenda,
+      estoque: novoProdutoDB.estoque,
+      controlarEstoque: novoProdutoDB.controlarestoque,
+      estoqueMinimo: novoProdutoDB.estoqueminimo
+    });
   } catch (error: any) {
     console.error('Erro ao criar produto:', error);
     res.status(500).json({ error: 'Erro ao criar produto: ' + error.message });
@@ -99,21 +121,30 @@ app.put('/api/produtos/:id', async (req, res) => {
       return res.status(404).json({ error: 'Produto não encontrado.' });
     }
 
-    const produtoAtualizado: Produto = {
+    const produtoAtualizadoDB: any = {
       ...pOriginal,
       nome: updateData.nome !== undefined ? updateData.nome : pOriginal.nome,
       categoria: updateData.categoria !== undefined ? updateData.categoria : pOriginal.categoria,
-      precoCusto: updateData.precoCusto !== undefined ? Number(updateData.precoCusto) : pOriginal.precoCusto,
-      precoVenda: updateData.precoVenda !== undefined ? Number(updateData.precoVenda) : pOriginal.precoVenda,
+      precocusto: updateData.precoCusto !== undefined ? Number(updateData.precoCusto) : pOriginal.precocusto,
+      precovenda: updateData.precoVenda !== undefined ? Number(updateData.precoVenda) : pOriginal.precovenda,
       estoque: updateData.controlarEstoque !== undefined ? (Boolean(updateData.controlarEstoque) ? Number(updateData.estoque || 0) : 0) : pOriginal.estoque,
-      controlarEstoque: updateData.controlarEstoque !== undefined ? Boolean(updateData.controlarEstoque) : pOriginal.controlarEstoque,
-      estoqueMinimo: updateData.estoqueMinimo !== undefined ? (updateData.estoqueMinimo === null ? null : Number(updateData.estoqueMinimo)) : pOriginal.estoqueMinimo
+      controlarestoque: updateData.controlarEstoque !== undefined ? Boolean(updateData.controlarEstoque) : pOriginal.controlarestoque,
+      estoqueminimo: updateData.estoqueMinimo !== undefined ? (updateData.estoqueMinimo === null ? null : Number(updateData.estoqueMinimo)) : pOriginal.estoqueminimo
     };
 
-    const { error: updateError } = await supabase.from('produtos').update(produtoAtualizado).eq('id', id);
+    const { error: updateError } = await supabase.from('produtos').update(produtoAtualizadoDB).eq('id', id);
     if (updateError) throw updateError;
 
-    res.json(produtoAtualizado);
+    res.json({
+      id: produtoAtualizadoDB.id,
+      nome: produtoAtualizadoDB.nome,
+      categoria: produtoAtualizadoDB.categoria,
+      precoCusto: produtoAtualizadoDB.precocusto,
+      precoVenda: produtoAtualizadoDB.precovenda,
+      estoque: produtoAtualizadoDB.estoque,
+      controlarEstoque: produtoAtualizadoDB.controlarestoque,
+      estoqueMinimo: produtoAtualizadoDB.estoqueminimo
+    });
   } catch (error: any) {
     console.error('Erro ao atualizar produto:', error);
     res.status(500).json({ error: 'Erro ao atualizar produto: ' + error.message });
