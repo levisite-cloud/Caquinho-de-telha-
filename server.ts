@@ -179,7 +179,15 @@ app.get('/api/comandas', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
     
-    res.json(data);
+    const mappedData = data.map((c: any) => ({
+      id: c.id,
+      identificador: c.identificador,
+      ativa: c.ativa,
+      itens: c.itens,
+      dataAbertura: c.dataabertura
+    }));
+    
+    res.json(mappedData);
   } catch (error: any) {
     console.error('Erro ao listar comandas:', error);
     res.status(500).json({ error: 'Erro ao listar comandas' });
@@ -209,18 +217,24 @@ app.post('/api/comandas', async (req, res) => {
     }
 
     const id = Math.random().toString(36).substring(2, 9);
-    const novaComanda: Comanda = {
+    const novaComandaDB = {
       id,
       identificador: identificador.trim(),
       ativa: true,
       itens: [],
-      dataAbertura: new Date().toISOString()
+      dataabertura: new Date().toISOString()
     };
 
-    const { error } = await supabase.from('comandas').insert([novaComanda]);
+    const { error } = await supabase.from('comandas').insert([novaComandaDB]);
     if (error) throw error;
 
-    res.status(201).json(novaComanda);
+    res.status(201).json({
+      id: novaComandaDB.id,
+      identificador: novaComandaDB.identificador,
+      ativa: novaComandaDB.ativa,
+      itens: novaComandaDB.itens,
+      dataAbertura: novaComandaDB.dataabertura
+    });
   } catch (error: any) {
     console.error('Erro ao abrir comanda:', error);
     res.status(500).json({ error: 'Erro ao abrir comanda: ' + error.message });
@@ -314,20 +328,28 @@ app.post('/api/vendas', async (req, res) => {
       }
     }
 
-    const novaVenda: Venda = {
+    const novaVendaDB: any = {
       id: Math.random().toString(36).substring(2, 9),
-      comandaId,
-      comandaIdentificador,
+      comandaid: comandaId,
+      comandaidentificador: comandaIdentificador,
       data: new Date().toISOString(),
       itens: itensVenda,
       total: Number(total.toFixed(2)),
-      formaPagamento: formaPagamento as FormaPagamento
+      formapagamento: formaPagamento as FormaPagamento
     };
 
-    const { error: insertError } = await supabase.from('vendas').insert([novaVenda]);
+    const { error: insertError } = await supabase.from('vendas').insert([novaVendaDB]);
     if (insertError) throw insertError;
 
-    res.status(201).json(novaVenda);
+    res.status(201).json({
+      id: novaVendaDB.id,
+      comandaId: novaVendaDB.comandaid,
+      comandaIdentificador: novaVendaDB.comandaidentificador,
+      data: novaVendaDB.data,
+      itens: novaVendaDB.itens,
+      total: novaVendaDB.total,
+      formaPagamento: novaVendaDB.formapagamento
+    });
   } catch (error: any) {
     console.error('Erro ao registrar venda:', error);
     res.status(500).json({ error: 'Erro ao registrar venda: ' + error.message });
@@ -347,8 +369,16 @@ app.get('/api/vendas/relatorio', async (req, res) => {
       
     if (error) throw error;
     
-    const vendasHoje = vendas || [];
-    const totalGeral = vendasHoje.reduce((acc, v) => acc + v.total, 0);
+    const vendasHoje = (vendas || []).map((v: any) => ({
+      id: v.id,
+      comandaId: v.comandaid,
+      comandaIdentificador: v.comandaidentificador,
+      data: v.data,
+      itens: v.itens,
+      total: v.total,
+      formaPagamento: v.formapagamento
+    }));
+    const totalGeral = vendasHoje.reduce((acc: any, v: any) => acc + v.total, 0);
 
     const porForma: Record<string, number> = {
       'Dinheiro': 0,
