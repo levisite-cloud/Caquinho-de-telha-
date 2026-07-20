@@ -1307,46 +1307,43 @@ export default function App() {
                           <div
                             key={produto.id}
                             onClick={() => adicionarAoCarrinho(produto)}
-                            className={`bg-[#121214] border hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/[0.03] hover:-translate-y-0.5 rounded-xl p-3 flex flex-col justify-between transition-all duration-200 cursor-pointer text-left relative group ${
+                            className={`bg-[#121214] border hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/[0.03] hover:-translate-y-0.5 rounded-xl p-2.5 flex flex-col justify-between transition-all duration-200 cursor-pointer text-left relative group ${
                               esgotado ? 'opacity-60 border-rose-950/50 bg-rose-950/5' : 'border-zinc-800'
                             }`}
                             id={`produto-card-${produto.id}`}
                           >
-                            <div>
-                              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide line-clamp-1">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide line-clamp-1 leading-none">
                                 {produto.categoria}
                               </span>
-                              <h3 className="text-sm font-semibold text-zinc-200 mt-1 leading-snug group-hover:text-amber-400 transition-colors line-clamp-2">
+                              <h3 className="text-[13px] font-semibold text-zinc-200 leading-tight group-hover:text-amber-400 transition-colors line-clamp-2">
                                 {produto.nome}
                               </h3>
                             </div>
 
-                            <div className="mt-4 flex justify-between items-end">
-                              <div>
-                                <p className="text-[10px] text-zinc-400 leading-none mb-1">Preço</p>
-                                <p className="text-base font-extrabold text-amber-400 font-mono leading-none">
-                                  R$ {produto.precoVenda.toFixed(2)}
-                                </p>
-                              </div>
+                            <div className="mt-2.5 flex justify-between items-center">
+                              <p className="text-sm font-extrabold text-amber-400 font-mono leading-none">
+                                R$ {produto.precoVenda.toFixed(2)}
+                              </p>
 
-                              <div className="flex flex-col items-end gap-1">
+                              <div className="flex items-center gap-1.5">
                                 {produto.controlarEstoque ? (
-                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded leading-none ${
                                     esgotado
                                       ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                                       : produto.estoque < 15
                                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                                       : 'bg-zinc-800 text-zinc-400'
                                   }`}>
-                                    {esgotado ? 'Esgotado' : `Estoque: ${produto.estoque}`}
+                                    {esgotado ? 'Esgotado' : `${produto.estoque} un`}
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] bg-zinc-800 text-zinc-400 font-medium px-1.5 py-0.5 rounded">
-                                    Livre ♾️
+                                  <span className="text-[9px] bg-zinc-800 text-zinc-500 font-medium px-1.5 py-0.5 rounded leading-none">
+                                    Livre
                                   </span>
                                 )}
 
-                                <div className="p-1 bg-amber-500/10 text-amber-400 rounded-lg group-hover:bg-amber-500 group-hover:text-zinc-950 transition-all">
+                                <div className="p-1 bg-amber-500/10 text-amber-400 rounded-md group-hover:bg-amber-500 group-hover:text-zinc-950 transition-all flex items-center justify-center">
                                   <Plus className="w-3.5 h-3.5" />
                                 </div>
                               </div>
