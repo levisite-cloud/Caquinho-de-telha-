@@ -156,6 +156,7 @@ export default function App() {
   const [empresaFormPixCidade, setEmpresaFormPixCidade] = useState<string>('');
   const [gerarPixQR, setGerarPixQR] = useState<boolean>(false);
   const [showPixModal, setShowPixModal] = useState<boolean>(false);
+  const [pixEmptyCartAlert, setPixEmptyCartAlert] = useState<boolean>(false);
 
   // Estados de Configuração de Impressão
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>({
@@ -1438,7 +1439,7 @@ export default function App() {
                                     if (totalCarrinho > 0) {
                                       setShowPixModal(true);
                                     } else {
-                                      alert('Adicione itens ao carrinho ou informe um valor maior que zero para gerar o QR Code PIX.');
+                                      setPixEmptyCartAlert(true);
                                     }
                                   } else if (forma !== 'PIX') {
                                     setGerarPixQR(false);
@@ -1545,7 +1546,7 @@ export default function App() {
                                         if (totalCarrinho > 0) {
                                           setShowPixModal(true);
                                         } else {
-                                          alert('Adicione itens ao carrinho ou informe um valor maior que zero para gerar o QR Code PIX.');
+                                          setPixEmptyCartAlert(true);
                                         }
                                       }}
                                       className="mt-3 px-4 py-1.5 bg-teal-500/10 text-teal-400 rounded hover:bg-teal-500/20 text-[10px] font-bold transition-colors border border-teal-500/20"
@@ -3120,6 +3121,26 @@ export default function App() {
                 Sim
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE ALERTA: CARRINHO VAZIO PIX */}
+      {pixEmptyCartAlert && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#18181B] border border-amber-500/50 rounded-xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center animate-scaleIn">
+            <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center mb-4">
+              <QrCode className="w-6 h-6 text-amber-400" />
+            </div>
+            <h3 className="text-lg font-bold text-zinc-100 mb-2 text-center">Atenção</h3>
+            <p className="text-sm text-zinc-400 mb-6 text-center">Adicione itens ao carrinho ou informe um valor maior que zero para gerar o QR Code PIX.</p>
+            
+            <button
+              onClick={() => setPixEmptyCartAlert(false)}
+              className="w-full py-2.5 rounded-lg text-sm font-bold bg-amber-500 text-zinc-950 hover:bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-colors cursor-pointer"
+            >
+              Entendi
+            </button>
           </div>
         </div>
       )}
