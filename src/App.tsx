@@ -148,6 +148,7 @@ export default function App() {
     slogan: 'O melhor sabor da culinária brasileira',
     logo: ''
   });
+  const [filtroEstoqueNegativo, setFiltroEstoqueNegativo] = useState<boolean>(false);
   const [empresaFormNome, setEmpresaFormNome] = useState<string>('');
   const [empresaFormCnpj, setEmpresaFormCnpj] = useState<string>('');
   const [empresaFormEndereco, setEmpresaFormEndereco] = useState<string>('');
@@ -161,6 +162,7 @@ export default function App() {
   const [gerarPixQR, setGerarPixQR] = useState<boolean>(false);
   const [showPixModal, setShowPixModal] = useState<boolean>(false);
   const [pixEmptyCartAlert, setPixEmptyCartAlert] = useState<boolean>(false);
+  const [empresaFormPermitirEstoqueNegativo, setEmpresaFormPermitirEstoqueNegativo] = useState<boolean>(false);
 
   // Estados de Configuração NFC-e
   const [empresaFormNfceAmbiente, setEmpresaFormNfceAmbiente] = useState<'homologacao' | 'producao'>('homologacao');
@@ -469,6 +471,7 @@ export default function App() {
       telefone: empresaFormTelefone.trim(),
       slogan: empresaFormSlogan.trim(),
       logo: empresaFormLogo,
+      permitirEstoqueNegativo: empresaFormPermitirEstoqueNegativo,
       pixConfig: empresaFormPixChave.trim() ? {
         chave: empresaFormPixChave.trim(),
         tipoChave: empresaFormPixTipo,
@@ -514,6 +517,7 @@ export default function App() {
     setEmpresaFormTelefone(empresa.telefone || '');
     setEmpresaFormSlogan(empresa.slogan || '');
     setEmpresaFormLogo(empresa.logo || '');
+    setEmpresaFormPermitirEstoqueNegativo(empresa.permitirEstoqueNegativo || false);
     setEmpresaFormPixChave(empresa.pixConfig?.chave || '');
     setEmpresaFormPixTipo(empresa.pixConfig?.tipoChave || 'CPF');
     setEmpresaFormPixNome(empresa.pixConfig?.nomeRecebedor || '');
@@ -1410,13 +1414,14 @@ export default function App() {
                       </div>
                     ) : (
                       produtosFiltrados.map((produto) => {
-                        const esgotado = produto.controlarEstoque && produto.estoque <= 0;
+                        const esgotado = produto.controlarEstoque && produto.estoque === 0;
+                        const negativo = produto.controlarEstoque && produto.estoque < 0;
                         return (
                           <div
                             key={produto.id}
                             onClick={() => adicionarAoCarrinho(produto)}
                             className={`bg-[#121214] border hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/[0.03] hover:-translate-y-0.5 rounded-xl p-3.5 flex flex-col justify-between transition-all duration-200 cursor-pointer text-left relative group ${
-                              esgotado ? 'opacity-60 border-rose-950/50 bg-rose-950/5' : 'border-zinc-800'
+                              negativo ? 'border-rose-500/50 bg-rose-500/5' : esgotado ? 'opacity-60 border-rose-950/50 bg-rose-950/5' : 'border-zinc-800'
                             }`}
                             id={`produto-card-${produto.id}`}
                           >
@@ -1440,13 +1445,15 @@ export default function App() {
                               <div className="flex flex-col items-end gap-1">
                                 {produto.controlarEstoque ? (
                                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                    esgotado
-                                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                    negativo
+                                      ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30'
+                                      : esgotado
+                                      ? 'bg-rose-950/20 text-rose-400 border border-rose-950/30'
                                       : produto.estoque < 15
                                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                                       : 'bg-zinc-800 text-zinc-400'
                                   }`}>
-                                    {esgotado ? 'Esgotado' : `Estoque: ${produto.estoque}`}
+                                    {negativo ? `Negativo: ${produto.estoque}` : esgotado ? 'Esgotado' : `Estoque: ${produto.estoque}`}
                                   </span>
                                 ) : (
                                   <span className="text-[10px] bg-zinc-800 text-zinc-400 font-medium px-1.5 py-0.5 rounded">
@@ -1997,8 +2004,18 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Lista Geral de Produtos */}
                 <div className="bg-[#121214] rounded-xl border border-zinc-800 shadow-md overflow-hidden" id="produtos-list-wrapper">
+                  <div className="p-4 border-b border-zinc-800 bg-[#1A1A1E]">
+                    <label className="flex items-center gap-2 cursor-pointer w-max">
+                      <input
+                        type="checkbox"
+                        checked={filtroEstoqueNegativo}
+                        onChange={(e) => setFiltroEstoqueNegativo(e.target.checked)}
+                        className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-rose-500 focus:ring-rose-500 focus:ring-offset-zinc-900"
+                      />
+                      <span className="text-sm font-bold text-rose-500">Filtrar apenas produtos com Estoque Negativo</span>
+                    </label>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse" id="produtos-table">
                       <thead>
@@ -2021,15 +2038,25 @@ export default function App() {
                             </td>
                           </tr>
                         ) : (
-                          produtos.map((p) => {
+                          produtos
+                            .filter((p) => !filtroEstoqueNegativo || (p.controlarEstoque && p.estoque < 0))
+                            .map((p) => {
                             const lucro = p.precoVenda - p.precoCusto;
                             const margem = p.precoVenda > 0 ? (lucro / p.precoVenda) * 100 : 0;
+                            const isEstoqueNegativo = p.controlarEstoque && p.estoque < 0;
+                            
                             return (
-                              <tr key={p.id} className="hover:bg-[#1E1E22]/50 transition-colors" id={`row-produto-${p.id}`}>
+                              <React.Fragment key={p.id}>
+                              <tr className={`transition-colors ${isEstoqueNegativo ? 'bg-rose-500/10 hover:bg-rose-500/20' : 'hover:bg-[#1E1E22]/50'}`} id={`row-produto-${p.id}`}>
                                 <td className="p-3.5 pl-4">
                                   <div className="flex items-center gap-2">
                                     <span className="font-bold text-zinc-100 block">{p.nome}</span>
-                                    {p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5) && (
+                                    {isEstoqueNegativo ? (
+                                      <span className="inline-flex items-center gap-1 bg-rose-500/20 text-rose-500 border border-rose-500/30 px-2 py-0.5 rounded text-[10px] font-bold" title="Estoque Negativo!">
+                                        <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                        Estoque Negativo
+                                      </span>
+                                    ) : p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5) && (
                                       <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[10px] font-bold" title={`Estoque atingiu ou está abaixo do mínimo de ${p.estoqueMinimo ?? 5} un.`}>
                                         <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                         Mínimo atingido
@@ -2103,6 +2130,17 @@ export default function App() {
                                   </div>
                                 </td>
                               </tr>
+                              {isEstoqueNegativo && (
+                                <tr className="bg-rose-500/5">
+                                  <td colSpan={8} className="p-3 border-t border-rose-500/10">
+                                    <div className="flex items-center justify-center gap-2 text-rose-400 text-xs font-bold bg-rose-500/10 py-2 rounded-lg border border-rose-500/20">
+                                      <AlertCircle className="w-4 h-4" />
+                                      Atenção! O produto está com estoque negativo. Verifique as movimentações ou realize uma reposição.
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                              </React.Fragment>
                             );
                           })
                         )}
@@ -2131,7 +2169,7 @@ export default function App() {
                 
                 {/* Resumo Financeiro Cards */}
                 {relatorio && (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4" id="metrics-grid">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4" id="metrics-grid">
                     <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-total-vendas">
                       <div>
                         <span className="text-xs font-bold text-zinc-400 uppercase">Faturamento de Hoje</span>
@@ -2143,6 +2181,28 @@ export default function App() {
                         <DollarSign className="w-6 h-6" />
                       </div>
                     </div>
+
+                    {/* Novo Card de Estoque Negativo */}
+                    {(() => {
+                      const qtdEstoqueNegativo = produtos.filter(p => p.controlarEstoque && p.estoque < 0).length;
+                      return (
+                        <div 
+                          className={`border p-4 rounded-xl shadow-md flex items-center justify-between cursor-pointer transition-colors ${qtdEstoqueNegativo > 0 ? 'bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20' : 'bg-[#121214] border-zinc-800 hover:bg-[#1A1A1E]'}`} 
+                          onClick={() => { setFiltroEstoqueNegativo(true); setActiveTab('produtos'); }}
+                          title="Clique para ver os produtos com estoque negativo"
+                        >
+                          <div>
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase leading-tight block">Estoque<br/>Negativo</span>
+                            <h3 className={`text-2xl font-black font-mono mt-1 ${qtdEstoqueNegativo > 0 ? 'text-rose-400' : 'text-zinc-100'}`}>
+                              {qtdEstoqueNegativo}
+                            </h3>
+                          </div>
+                          <div className={`p-3 rounded-lg ${qtdEstoqueNegativo > 0 ? 'bg-rose-500/20 text-rose-500' : 'bg-zinc-800 text-zinc-400'}`}>
+                            <AlertCircle className="w-6 h-6" />
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-qtd-vendas">
                       <div>
@@ -2413,6 +2473,24 @@ export default function App() {
                         className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
                         placeholder="Ex: O melhor sabor da culinária brasileira"
                       />
+                    </div>
+
+                    <div className="flex items-center justify-between bg-[#1E1E22]/50 border border-zinc-800 rounded-xl p-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-zinc-100">Permitir Vendas com Estoque Negativo</h4>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">
+                          Se ativado, as vendas continuarão e o estoque ficará negativo. Se desativado, o sistema bloqueará a venda se não houver estoque.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={empresaFormPermitirEstoqueNegativo}
+                          onChange={(e) => setEmpresaFormPermitirEstoqueNegativo(e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                      </label>
                     </div>
 
                     {/* Logo upload block */}

@@ -318,11 +318,27 @@ app.post('/api/vendas', async (req, res) => {
 
     const total = itensVenda.reduce((acc, item) => acc + (item.precoVenda * item.quantidade), 0);
 
+    const { data: configSnap } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
+    const permitirEstoqueNegativo = configSnap?.empresa?.permitirEstoqueNegativo === true;
+
+    if (!permitirEstoqueNegativo) {
+      for (const item of itensVenda) {
+        const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
+        if (prod && (prod.controlarEstoque || prod.controlarestoque)) {
+          if (prod.estoque - item.quantidade < 0) {
+            return res.status(400).json({ error: `Venda não permitida. Quantidade em estoque insuficiente para o produto: ${prod.nome}` });
+          }
+        }
+      }
+    }
+
     // Baixa no estoque
     for (const item of itensVenda) {
       const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
       if (prod && (prod.controlarEstoque || prod.controlarestoque)) {
-        const novoEstoque = Math.max(0, prod.estoque - item.quantidade);
+        const novoEstoque = permitirEstoqueNegativo 
+          ? prod.estoque - item.quantidade 
+          : Math.max(0, prod.estoque - item.quantidade);
         await supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId);
       }
     }
@@ -489,7 +505,7 @@ app.get('/api/empresa', async (req, res) => {
 
 app.put('/api/empresa', async (req, res) => {
   try {
-    const { nome, cnpj, endereco, telefone, slogan, logo, pixConfig, nfceConfig } = req.body;
+    const { nome, cnpj, endereco, telefone, slogan, logo, pixConfig, nfceConfig, permitirEstoqueNegativo } = req.body;
 
     if (!nome || !nome.trim()) {
       return res.status(400).json({ error: 'O nome da empresa é obrigatório.' });
@@ -503,7 +519,8 @@ app.put('/api/empresa', async (req, res) => {
       slogan: (slogan || '').trim(),
       logo: logo || '',
       pixConfig: pixConfig || undefined,
-      nfceConfig: nfceConfig || undefined
+      nfceConfig: nfceConfig || undefined,
+      permitirEstoqueNegativo: Boolean(permitirEstoqueNegativo)
     };
 
     const { error } = await supabase.from('config').upsert({ id: 'empresa', empresa: dadosEmpresa });

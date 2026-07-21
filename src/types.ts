@@ -69,6 +69,7 @@ export interface Empresa {
   logo: string; // Base64 ou URL da imagem
   pixConfig?: PixConfig;
   nfceConfig?: NfceConfig;
+  permitirEstoqueNegativo?: boolean;
 }
 
 export interface PrinterConfig {
