@@ -1,9 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
-import Groq from 'groq-sdk';
-// Inicializar o cliente apenas se tiver chave, senão criar um fallback para não crashar o servidor
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || 'chave_ausente' });
 import { createClient } from '@supabase/supabase-js';
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './src/types.js';
 import { supabaseUrl, supabaseAnonKey } from './supabaseConfig.js';
@@ -1003,81 +1000,7 @@ app.post('/api/nfce/cancelar', async (req, res) => {
   }
 });
 
-// Gerar insights de vendas via Groq AI
-app.post('/api/ai/insights', async (req, res) => {
-  try {
-    const { relatorio } = req.body;
-    
-    if (!relatorio) {
-      return res.status(400).json({ error: 'Relatório ausente.' });
-    }
 
-    const prompt = `Você é um analista de negócios e estrategista para um restaurante/bar. 
-Analise os seguintes dados do relatório diário de vendas e forneça 3 insights rápidos e altamente acionáveis.
-Seja direto e prático. Retorne as informações em português.
-
-Dados:
-Total Faturado: R$ ${relatorio.totalGeral}
-Quantidade de Vendas: ${relatorio.quantidadeVendas}
-Ticket Médio: R$ ${relatorio.quantidadeVendas > 0 ? (relatorio.totalGeral / relatorio.quantidadeVendas).toFixed(2) : 0}
-
-Formas de Pagamento:
-${Object.entries(relatorio.porForma).map(([forma, valor]) => `- ${forma}: R$ ${valor}`).join('\n')}
-
-Top Produtos Mais Vendidos:
-${relatorio.maisVendidos?.slice(0, 5).map((p: any) => `- ${p.nome}: ${p.quantidade} un. (Faturamento: R$ ${p.totalGasto})`).join('\n') || 'Nenhum'}
-
-Retorne os 3 insights em formato de lista (bullet points).`;
-
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model: 'llama3-8b-8192',
-      temperature: 0.7,
-      max_tokens: 500,
-    });
-
-    const insights = chatCompletion.choices[0]?.message?.content || 'Nenhum insight gerado.';
-    res.json({ insights });
-  } catch (error: any) {
-    console.error('Erro ao gerar insights com Groq:', error);
-    res.status(500).json({ error: 'Erro ao gerar insights', detalhes: error.message });
-  }
-});
-
-// Garçom IA (Sugestões de Upsell)
-app.post('/api/ai/sugestoes', async (req, res) => {
-  try {
-    const { carrinho, cardapio } = req.body;
-    
-    if (!carrinho || carrinho.length === 0) {
-      return res.status(400).json({ error: 'Carrinho vazio.' });
-    }
-
-    const prompt = `Você é um garçom experiente e persuasivo em um restaurante/bar.
-O cliente tem os seguintes itens no pedido atual:
-${carrinho.map((i: any) => `- ${i.quantidade}x ${i.nome}`).join('\n')}
-
-Aqui está o resumo do cardápio disponível:
-${cardapio}
-
-Sua tarefa: Sugira 2 itens adicionais (que estão no cardápio) para acompanhar o pedido atual (upsell ou cross-sell).
-Aja como o garçom dando a dica para o caixa ou atendente oferecer ao cliente.
-Seja muito breve, natural e persuasivo (máximo de 2 frases curtas por sugestão). Retorne em português.`;
-
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model: 'llama3-8b-8192',
-      temperature: 0.7,
-      max_tokens: 300,
-    });
-
-    const sugestoes = chatCompletion.choices[0]?.message?.content || 'Nenhuma sugestão no momento.';
-    res.json({ sugestoes });
-  } catch (error: any) {
-    console.error('Erro ao gerar sugestões de upsell:', error);
-    res.status(500).json({ error: 'Erro ao gerar sugestões', detalhes: error.message });
-  }
-});
 
 // Serve static files / Vite middleware & listen
 async function startServer() {
