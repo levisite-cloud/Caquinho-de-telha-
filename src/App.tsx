@@ -1793,8 +1793,8 @@ export default function App() {
 
                       {/* Botões de Ação Final */}
                       <div className="flex flex-col gap-2">
-                        {modoVenda === 'comanda' && comandaSelecionadaId && (
-                          <div className="flex gap-2 w-full">
+                        <div className="flex gap-2 w-full">
+                          {modoVenda === 'comanda' && comandaSelecionadaId && (
                             <button
                               type="button"
                               onClick={salvarItensNaComanda}
@@ -1803,52 +1803,54 @@ export default function App() {
                             >
                               Salvar Parcial
                             </button>
-                            
-                            {((comandas.find(c => c.id === comandaSelecionadaId)?.itens?.length || 0) + carrinho.length) > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const selectedComanda = comandas.find(c => c.id === comandaSelecionadaId);
-                                  const todosItens = [...(selectedComanda?.itens || []), ...carrinho];
-                                  handleAbrirSimuladorImpressao(
-                                    'conferencia',
-                                    selectedComanda?.identificador || 'Comanda',
-                                    todosItens,
-                                    new Date().toISOString(),
-                                    comandaSelecionadaId
-                                  );
-                                }}
-                                className="bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 px-3 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                                id="btn-imprimir-conferencia"
-                                title="Imprimir Conferência"
-                              >
-                                <Receipt className="w-4 h-4 text-zinc-300 shrink-0" />
-                                <span className="hidden lg:inline">Conferência</span>
-                              </button>
-                            )}
+                          )}
+                          
+                          {(modoVenda === 'comanda' ? ((comandas.find(c => c.id === comandaSelecionadaId)?.itens?.length || 0) + carrinho.length > 0) : carrinho.length > 0) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const selectedComanda = modoVenda === 'comanda' ? comandas.find(c => c.id === comandaSelecionadaId) : null;
+                                const todosItens = modoVenda === 'comanda' ? [...(selectedComanda?.itens || []), ...carrinho] : carrinho;
+                                const identificador = modoVenda === 'comanda' ? (selectedComanda?.identificador || 'Comanda') : 'Venda Balcão';
+                                handleAbrirSimuladorImpressao(
+                                  'conferencia',
+                                  identificador,
+                                  todosItens,
+                                  new Date().toISOString(),
+                                  modoVenda === 'comanda' ? comandaSelecionadaId : undefined
+                                );
+                              }}
+                              className={`bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 px-3 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${modoVenda === 'direta' ? 'flex-1' : ''}`}
+                              id="btn-imprimir-conferencia"
+                              title="Imprimir Conferência"
+                            >
+                              <Receipt className="w-4 h-4 text-zinc-300 shrink-0" />
+                              <span className="hidden lg:inline">Conferência</span>
+                            </button>
+                          )}
 
-                            {carrinho.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const selectedComanda = comandas.find(c => c.id === comandaSelecionadaId);
-                                  handleAbrirSimuladorImpressao(
-                                    'cozinha',
-                                    selectedComanda?.identificador || 'Comanda',
-                                    carrinho,
-                                    new Date().toISOString(),
-                                    comandaSelecionadaId
-                                  );
-                                }}
-                                className="bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 px-3 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                                id="btn-imprimir-carrinho"
-                                title="Imprimir comanda atual para a cozinha"
-                              >
-                                <Printer className="w-4 h-4 text-amber-500 shrink-0" />
-                              </button>
-                            )}
-                          </div>
-                        )}
+                          {carrinho.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const selectedComanda = modoVenda === 'comanda' ? comandas.find(c => c.id === comandaSelecionadaId) : null;
+                                const identificador = modoVenda === 'comanda' ? (selectedComanda?.identificador || 'Comanda') : 'Venda Balcão';
+                                handleAbrirSimuladorImpressao(
+                                  'cozinha',
+                                  identificador,
+                                  carrinho,
+                                  new Date().toISOString(),
+                                  modoVenda === 'comanda' ? comandaSelecionadaId : undefined
+                                );
+                              }}
+                              className="bg-[#1E1E22] hover:bg-[#25252A] text-zinc-100 border border-zinc-800 px-3 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                              id="btn-imprimir-carrinho"
+                              title="Imprimir comanda atual para a cozinha"
+                            >
+                              <Printer className="w-4 h-4 text-amber-500 shrink-0" />
+                            </button>
+                          )}
+                        </div>
 
                         <button
                           type="button"
