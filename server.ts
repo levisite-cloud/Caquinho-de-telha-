@@ -321,9 +321,23 @@ app.post('/api/vendas', async (req, res) => {
     const { data: configSnap } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
     const permitirEstoqueNegativo = configSnap?.empresa?.permitirEstoqueNegativo === true;
 
+    // 1. Buscar todos os produtos de uma vez (Batch fetch)
+    const produtoIds = itensVenda.map(item => item.produtoId);
+    const { data: produtosBanco, error: fetchError } = await supabase.from('produtos').select('*').in('id', produtoIds);
+    if (fetchError) throw fetchError;
+    
+    // Map para acesso instantâneo em memória (O(1))
+    const produtosMap = new Map();
+    if (produtosBanco) {
+      for (const p of produtosBanco) {
+        produtosMap.set(p.id, p);
+      }
+    }
+
+    // 2. Validar Estoque (se não permitir negativo)
     if (!permitirEstoqueNegativo) {
       for (const item of itensVenda) {
-        const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
+        const prod = produtosMap.get(item.produtoId);
         if (prod && (prod.controlarEstoque || prod.controlarestoque)) {
           if (prod.estoque - item.quantidade < 0) {
             return res.status(400).json({ error: `Venda não permitida. Quantidade em estoque insuficiente para o produto: ${prod.nome}` });
@@ -332,16 +346,22 @@ app.post('/api/vendas', async (req, res) => {
       }
     }
 
-    // Baixa no estoque
+    // 3. Atualizar Estoque paralelamente (Parallel Batch)
+    const updatePromises = [];
     for (const item of itensVenda) {
-      const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
+      const prod = produtosMap.get(item.produtoId);
       if (prod && (prod.controlarEstoque || prod.controlarestoque)) {
         const novoEstoque = permitirEstoqueNegativo 
           ? prod.estoque - item.quantidade 
           : Math.max(0, prod.estoque - item.quantidade);
-        await supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId);
+        updatePromises.push(
+          supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId)
+        );
       }
     }
+    
+    // Aguardar todas as atualizações de estoque terminarem juntas
+    await Promise.all(updatePromises);
 
     const novaVendaDB: any = {
       id: Math.random().toString(36).substring(2, 9),
@@ -384,13 +404,28 @@ app.post('/api/vendas/:id/devolucao', async (req, res) => {
       return res.status(400).json({ error: 'Venda já foi devolvida' });
     }
 
-    for (const item of venda.itens) {
-      const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
-      if (prod && (prod.controlarEstoque || prod.controlarestoque)) {
-        const novoEstoque = prod.estoque + item.quantidade;
-        await supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId);
+    // Buscar produtos em lote e devolver ao estoque paralelamente
+    const produtoIds = venda.itens.map((item: any) => item.produtoId);
+    const { data: produtosBanco } = await supabase.from('produtos').select('*').in('id', produtoIds);
+    
+    const produtosMap = new Map();
+    if (produtosBanco) {
+      for (const p of produtosBanco) {
+        produtosMap.set(p.id, p);
       }
     }
+
+    const updatePromises = [];
+    for (const item of venda.itens) {
+      const prod = produtosMap.get(item.produtoId);
+      if (prod && (prod.controlarEstoque || prod.controlarestoque)) {
+        const novoEstoque = prod.estoque + item.quantidade;
+        updatePromises.push(
+          supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId)
+        );
+      }
+    }
+    await Promise.all(updatePromises);
 
     const novaFormaPagamento = `DEVOLVIDO|${motivo || 'Sem motivo'}|${venda.formapagamento}`;
     const { error: updateError } = await supabase.from('vendas').update({ formapagamento: novaFormaPagamento }).eq('id', id);
