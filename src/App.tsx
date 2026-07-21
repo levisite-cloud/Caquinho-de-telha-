@@ -12,6 +12,7 @@ import {
   Package,
   Layers,
   TrendingUp,
+  AlertTriangle,
   RefreshCw,
   FileText,
   CheckCircle,
@@ -1088,7 +1089,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 flex flex-col font-sans" id="pdv-app-container">
-      
+      {/* Notificação Global de Estoque Mínimo */}
+      {produtos.filter(p => p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5)).length > 0 && (
+        <div className="bg-amber-500/20 border-b border-amber-500/30 text-amber-500 px-4 py-2 flex items-center justify-center gap-2 text-sm font-bold shadow-md z-50">
+          <AlertTriangle className="w-5 h-5" />
+          <span>Atenção: Você possui {produtos.filter(p => p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5)).length} produto(s) com estoque baixo ou zerado! Vá na aba "Produtos" para verificar.</span>
+        </div>
+      )}
+
       {/* HEADER PRINCIPAL */}
       <header className="bg-[#121214] text-white shadow-md border-b border-zinc-800" id="main-header">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
