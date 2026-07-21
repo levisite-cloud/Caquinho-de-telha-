@@ -2,7 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import Groq from 'groq-sdk';
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Inicializar o cliente apenas se tiver chave, senão criar um fallback para não crashar o servidor
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || 'chave_ausente' });
 import { createClient } from '@supabase/supabase-js';
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './src/types.js';
 import { supabaseUrl, supabaseAnonKey } from './supabaseConfig.js';
