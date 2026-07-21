@@ -355,6 +355,37 @@ app.post('/api/vendas', async (req, res) => {
   }
 });
 
+// Devolver Venda
+app.post('/api/vendas/:id/devolucao', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { data: venda, error: getError } = await supabase.from('vendas').select('*').eq('id', id).single();
+    if (getError || !venda) return res.status(404).json({ error: 'Venda não encontrada' });
+    
+    if (venda.formapagamento.startsWith('Devolvido')) {
+      return res.status(400).json({ error: 'Venda já foi devolvida' });
+    }
+
+    for (const item of venda.itens) {
+      const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
+      if (prod && prod.controlarEstoque) {
+        const novoEstoque = prod.estoque + item.quantidade;
+        await supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId);
+      }
+    }
+
+    const novaFormaPagamento = `Devolvido - ${venda.formapagamento}`;
+    const { error: updateError } = await supabase.from('vendas').update({ formapagamento: novaFormaPagamento }).eq('id', id);
+    if (updateError) throw updateError;
+
+    res.json({ sucesso: true });
+  } catch (error: any) {
+    console.error('Erro ao devolver venda:', error);
+    res.status(500).json({ error: 'Erro ao devolver venda' });
+  }
+});
+
 // 4. RELATÓRIOS E FECHAMENTO DE CAIXA
 app.get('/api/vendas/relatorio', async (req, res) => {
   try {
@@ -377,7 +408,10 @@ app.get('/api/vendas/relatorio', async (req, res) => {
       total: v.total,
       formaPagamento: v.formapagamento
     }));
-    const totalGeral = vendasHoje.reduce((acc: any, v: any) => acc + v.total, 0);
+
+    const vendasValidas = vendasHoje.filter((v: any) => !v.formaPagamento.startsWith('Devolvido'));
+
+    const totalGeral = vendasValidas.reduce((acc: any, v: any) => acc + v.total, 0);
 
     const porForma: Record<string, number> = {
       'Dinheiro': 0,
@@ -386,7 +420,7 @@ app.get('/api/vendas/relatorio', async (req, res) => {
       'PIX': 0
     };
 
-    vendasHoje.forEach((v: any) => {
+    vendasValidas.forEach((v: any) => {
       if (v.formaPagamento.startsWith('Cartão de Crédito')) {
         porForma['Cartão de Crédito'] += v.total;
       } else if (porForma[v.formaPagamento] !== undefined) {
@@ -395,7 +429,7 @@ app.get('/api/vendas/relatorio', async (req, res) => {
     });
 
     const produtosVendidos: { [nome: string]: number } = {};
-    vendasHoje.forEach(v => {
+    vendasValidas.forEach(v => {
       v.itens.forEach((item: any) => {
         produtosVendidos[item.nome] = (produtosVendidos[item.nome] || 0) + item.quantidade;
       });

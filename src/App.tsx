@@ -30,7 +30,8 @@ import {
   Cloud,
   LogOut,
   KeyRound,
-  Sparkles
+  Sparkles,
+  Undo2
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
@@ -770,6 +771,27 @@ export default function App() {
       }
     } catch (err) {
       mostrarFeedback('Erro de conexão ao processar venda.', 'error');
+    }
+  };
+
+  const handleDevolverVenda = async (e: React.MouseEvent, vendaId: string) => {
+    e.stopPropagation();
+    if (!window.confirm('Tem certeza que deseja devolver esta venda? O valor será estornado e os produtos retornarão ao estoque.')) {
+      return;
+    }
+    mostrarFeedback('Processando devolução...');
+    try {
+      const res = await fetch(`/api/vendas/${vendaId}/devolucao`, { method: 'POST' });
+      if (res.ok) {
+        mostrarFeedback('Venda devolvida com sucesso!');
+        await carregarRelatorio();
+        await inicializarDados(); // Para atualizar o estoque na tela
+      } else {
+        const err = await res.json();
+        mostrarFeedback(`Erro: ${err.error}`, 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão ao devolver venda.', 'error');
     }
   };
 
@@ -2263,10 +2285,25 @@ export default function App() {
                                   Forma: {v.formaPagamento}
                                 </span>
                               </div>
-                              <div className="text-right">
-                                <span className="text-xs font-bold text-zinc-100 font-mono">
-                                  R$ {v.total.toFixed(2)}
-                                </span>
+                              <div className="flex flex-col items-end gap-1">
+                                <div className="flex items-center gap-2">
+                                  {v.formaPagamento.startsWith('Devolvido') ? (
+                                    <span className="text-[9px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                                      DEVOLVIDA
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => handleDevolverVenda(e, v.id)}
+                                      className="text-zinc-500 hover:text-amber-500 hover:bg-amber-500/10 p-1 rounded transition-colors"
+                                      title="Devolver Venda e Retornar ao Estoque"
+                                    >
+                                      <Undo2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  <span className={`text-xs font-bold font-mono ${v.formaPagamento.startsWith('Devolvido') ? 'text-zinc-600 line-through' : 'text-zinc-100'}`}>
+                                    R$ {v.total.toFixed(2)}
+                                  </span>
+                                </div>
                                 <span className="text-[9px] text-zinc-500 block font-mono">
                                   {new Date(v.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
