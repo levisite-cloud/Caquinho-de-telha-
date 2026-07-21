@@ -359,11 +359,12 @@ app.post('/api/vendas', async (req, res) => {
 app.post('/api/vendas/:id/devolucao', async (req, res) => {
   try {
     const { id } = req.params;
+    const { motivo } = req.body;
     
     const { data: venda, error: getError } = await supabase.from('vendas').select('*').eq('id', id).single();
     if (getError || !venda) return res.status(404).json({ error: 'Venda não encontrada' });
     
-    if (venda.formapagamento.startsWith('Devolvido')) {
+    if (venda.formapagamento.startsWith('Devolvido') || venda.formapagamento.startsWith('DEVOLVIDO')) {
       return res.status(400).json({ error: 'Venda já foi devolvida' });
     }
 
@@ -375,7 +376,7 @@ app.post('/api/vendas/:id/devolucao', async (req, res) => {
       }
     }
 
-    const novaFormaPagamento = `Devolvido - ${venda.formapagamento}`;
+    const novaFormaPagamento = `DEVOLVIDO|${motivo || 'Sem motivo'}|${venda.formapagamento}`;
     const { error: updateError } = await supabase.from('vendas').update({ formapagamento: novaFormaPagamento }).eq('id', id);
     if (updateError) throw updateError;
 
@@ -409,7 +410,7 @@ app.get('/api/vendas/relatorio', async (req, res) => {
       formaPagamento: v.formapagamento
     }));
 
-    const vendasValidas = vendasHoje.filter((v: any) => !v.formaPagamento.startsWith('Devolvido'));
+    const vendasValidas = vendasHoje.filter((v: any) => !v.formaPagamento.startsWith('Devolvido') && !v.formaPagamento.startsWith('DEVOLVIDO'));
 
     const totalGeral = vendasValidas.reduce((acc: any, v: any) => acc + v.total, 0);
 

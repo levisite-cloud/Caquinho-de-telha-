@@ -195,6 +195,9 @@ export default function App() {
 
   // Modal de Venda Concluída (Cupom Fiscal)
   const [showCupomModal, setShowCupomModal] = useState<boolean>(false);
+  const [showDevolucaoModal, setShowDevolucaoModal] = useState<boolean>(false);
+  const [vendaDevolucaoId, setVendaDevolucaoId] = useState<string>('');
+  const [motivoDevolucao, setMotivoDevolucao] = useState<string>('');
   const [vendaRecente, setVendaRecente] = useState<Venda | null>(null);
 
   // Estados para Simulação de Impressão (Cozinha e Cliente)
@@ -776,12 +779,24 @@ export default function App() {
 
   const handleDevolverVenda = async (e: React.MouseEvent, vendaId: string) => {
     e.stopPropagation();
-    if (!window.confirm('Tem certeza que deseja devolver esta venda? O valor será estornado e os produtos retornarão ao estoque.')) {
+    setVendaDevolucaoId(vendaId);
+    setMotivoDevolucao('');
+    setShowDevolucaoModal(true);
+  };
+
+  const confirmarDevolucao = async () => {
+    if (!motivoDevolucao.trim()) {
+      mostrarFeedback('Por favor, informe o motivo da devolução.', 'error');
       return;
     }
     mostrarFeedback('Processando devolução...');
+    setShowDevolucaoModal(false);
     try {
-      const res = await fetch(`/api/vendas/${vendaId}/devolucao`, { method: 'POST' });
+      const res = await fetch(`/api/vendas/${vendaDevolucaoId}/devolucao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: motivoDevolucao })
+      });
       if (res.ok) {
         mostrarFeedback('Venda devolvida com sucesso!');
         await carregarRelatorio();
@@ -2287,10 +2302,17 @@ export default function App() {
                               </div>
                               <div className="flex flex-col items-end gap-1">
                                 <div className="flex items-center gap-2">
-                                  {v.formaPagamento.startsWith('Devolvido') ? (
-                                    <span className="text-[9px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
-                                      DEVOLVIDA
-                                    </span>
+                                  {(v.formaPagamento.startsWith('Devolvido') || v.formaPagamento.startsWith('DEVOLVIDO')) ? (
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-[9px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                                        DEVOLVIDA
+                                      </span>
+                                      {v.formaPagamento.startsWith('DEVOLVIDO|') && (
+                                        <span className="text-[8px] text-zinc-500 italic truncate max-w-[100px] mt-0.5">
+                                          Motivo: {v.formaPagamento.split('|')[1]}
+                                        </span>
+                                      )}
+                                    </div>
                                   ) : (
                                     <button
                                       onClick={(e) => handleDevolverVenda(e, v.id)}
@@ -2300,7 +2322,7 @@ export default function App() {
                                       <Undo2 className="w-4 h-4" />
                                     </button>
                                   )}
-                                  <span className={`text-xs font-bold font-mono ${v.formaPagamento.startsWith('Devolvido') ? 'text-zinc-600 line-through' : 'text-zinc-100'}`}>
+                                  <span className={`text-xs font-bold font-mono ${(v.formaPagamento.startsWith('Devolvido') || v.formaPagamento.startsWith('DEVOLVIDO')) ? 'text-zinc-600 line-through' : 'text-zinc-100'}`}>
                                     R$ {v.total.toFixed(2)}
                                   </span>
                                 </div>
@@ -3555,6 +3577,53 @@ export default function App() {
             >
               Entendi
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Devolução */}
+      {showDevolucaoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#121214] border border-zinc-800 p-6 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col items-center animate-slideUp">
+            <div className="w-12 h-12 bg-rose-500/10 rounded-full flex items-center justify-center mb-4 border border-rose-500/20">
+              <Undo2 className="w-6 h-6 text-rose-500" />
+            </div>
+            
+            <h3 className="text-xl font-bold text-zinc-100 mb-2">Devolver Venda</h3>
+            <p className="text-sm text-zinc-400 text-center mb-6">
+              O valor será estornado do caixa de hoje e o estoque dos produtos será restaurado.
+            </p>
+
+            <div className="w-full space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                  Motivo da Devolução *
+                </label>
+                <textarea
+                  value={motivoDevolucao}
+                  onChange={(e) => setMotivoDevolucao(e.target.value)}
+                  placeholder="Ex: Cliente desistiu, produto com defeito..."
+                  className="w-full bg-[#1A1A1E] border border-zinc-800 rounded-lg p-3 text-zinc-200 text-sm focus:outline-none focus:border-amber-500/50 resize-none h-24"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowDevolucaoModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-lg transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarDevolucao}
+                  disabled={!motivoDevolucao.trim()}
+                  className="flex-1 px-4 py-2.5 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-lg transition-colors text-sm"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
