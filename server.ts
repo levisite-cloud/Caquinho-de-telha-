@@ -321,7 +321,7 @@ app.post('/api/vendas', async (req, res) => {
     // Baixa no estoque
     for (const item of itensVenda) {
       const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
-      if (prod && prod.controlarEstoque) {
+      if (prod && (prod.controlarEstoque || prod.controlarestoque)) {
         const novoEstoque = Math.max(0, prod.estoque - item.quantidade);
         await supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId);
       }
@@ -370,7 +370,7 @@ app.post('/api/vendas/:id/devolucao', async (req, res) => {
 
     for (const item of venda.itens) {
       const { data: prod } = await supabase.from('produtos').select('*').eq('id', item.produtoId).single();
-      if (prod && prod.controlarEstoque) {
+      if (prod && (prod.controlarEstoque || prod.controlarestoque)) {
         const novoEstoque = prod.estoque + item.quantidade;
         await supabase.from('produtos').update({ estoque: novoEstoque }).eq('id', item.produtoId);
       }
