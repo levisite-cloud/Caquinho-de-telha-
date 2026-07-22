@@ -242,6 +242,16 @@ export default function App() {
       mostrarFeedback('Preencha o valor e o motivo.', 'error');
       return;
     }
+    
+    if (tipo === 'Sangria') {
+      const totalSup = caixaMovimentacoes.filter(m => m.tipo === 'Suprimento').reduce((a, b) => a + Number(b.valor), 0);
+      const totalSan = caixaMovimentacoes.filter(m => m.tipo === 'Sangria').reduce((a, b) => a + Number(b.valor), 0);
+      const saldoFisico = (caixaAtivo ? Number(caixaAtivo.fundo_inicial) : 0) + totalSup - totalSan;
+      if (caixaMovValorForm > saldoFisico) {
+        mostrarFeedback('Saldo insuficiente na gaveta para realizar esta sangria.', 'error');
+        return;
+      }
+    }
     try {
       const res = await fetch('/api/caixa/movimentar', {
         method: 'POST',
@@ -1470,8 +1480,6 @@ export default function App() {
                <div className="flex flex-col gap-1 mt-1 border-l border-zinc-800 ml-5 pl-3">
                  <button onClick={() => { setActiveTab('caixa'); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'caixa' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Abertura / Histórico</button>
                  <button onClick={() => { setShowFecharCaixaModal(true); setIsMobileMenuOpen(false); }} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Fechamento de Caixa</button>
-                 <button onClick={() => { setShowSangriaModal(true); setIsMobileMenuOpen(false); }} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Sangria</button>
-                 <button onClick={() => { setShowSuprimentoModal(true); setIsMobileMenuOpen(false); }} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Suprimento</button>
                  <button onClick={() => { setActiveTab('relatorios'); carregarRelatorio(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'relatorios' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Relatórios</button>
                </div>
              )}
@@ -3811,6 +3819,17 @@ export default function App() {
             </div>
 
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#0A0A0B] p-3 rounded-lg border border-zinc-800/50">
+                  <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider block mb-0.5">Operador Responsável</span>
+                  <span className="text-sm font-medium text-zinc-300">{caixaAtivo?.operador || 'Usuário Atual'}</span>
+                </div>
+                <div className="bg-[#0A0A0B] p-3 rounded-lg border border-zinc-800/50">
+                  <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider block mb-0.5">Data / Hora</span>
+                  <span className="text-sm font-medium text-zinc-300">{new Date().toLocaleString()}</span>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase tracking-wide">Valor da Movimentação (R$)</label>
                 <input type="number" step="0.01" value={caixaMovValorForm || ''} onChange={e => setCaixaMovValorForm(Number(e.target.value))} className={`w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 focus:outline-none font-mono text-lg transition-colors ${isSangria ? 'focus:border-rose-500/80 text-rose-400' : 'focus:border-emerald-500/80 text-emerald-400'}`} placeholder="0.00" />
@@ -3822,8 +3841,8 @@ export default function App() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase tracking-wide">Motivo da Movimentação</label>
-                <input type="text" value={caixaMovMotivoForm} onChange={e => setCaixaMovMotivoForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder="Ex: Pagamento fornecedor, Troco..." />
+                <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase tracking-wide">Motivo / Observação</label>
+                <input type="text" value={caixaMovMotivoForm} onChange={e => setCaixaMovMotivoForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder="Ex: Pagamento fornecedor, Troco inicial..." />
               </div>
             </div>
             
