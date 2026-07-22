@@ -63,6 +63,7 @@ import { supabaseUrl, supabaseAnonKey } from '../supabaseConfig';
 import { PinLockScreen } from './components/PinLockScreen';
 import { AdminUsuarios } from './pages/AdminUsuarios';
 import { AdminAuditoria } from './pages/AdminAuditoria';
+import { AdminFinanceiro } from './pages/AdminFinanceiro';
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -1518,8 +1519,8 @@ export default function App() {
              )}
            </div>
            
-           <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-2 text-zinc-600 cursor-not-allowed`} title="Em breve">
-             <TrendingUp className="w-4 h-4" /> Financeiro
+           <button onClick={() => { setActiveTab('financeiro'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer mt-2 ${activeTab === 'financeiro' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-300 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
+             <TrendingUp className="w-4 h-4" /> Financeiro Global
            </button>
            
            {/* ACCORDION CONFIG */}
@@ -1661,7 +1662,7 @@ export default function App() {
         )}
 
         {/* ÁREA DE CONTEÚDO PRINCIPAL */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col justify-stretch overflow-y-auto" id="main-content-wrapper">
+        <main className="flex-1 overflow-auto p-2 md:p-3" id="main-content-wrapper">
         
         {isLoading ? (
           <div className="flex-1 flex flex-col justify-center items-center py-20 gap-3" id="loading-spinner-container">
@@ -1673,15 +1674,16 @@ export default function App() {
             {/* 1. ABA DE PDV (FRENTE DE CAIXA) */}
             {activeTab === 'usuarios' && <AdminUsuarios />}
           {activeTab === 'auditoria' && <AdminAuditoria />}
+          {activeTab === 'financeiro' && <AdminFinanceiro />}
           {activeTab === 'pdv' && (
               !caixaAtivo ? (
-                <div className="flex-1 flex flex-col justify-center items-center py-20 gap-4 bg-[#121214] rounded-xl border border-zinc-800 m-4">
+                <div className="flex-1 flex flex-col justify-center items-center py-20 gap-4 bg-[#121214] rounded-xl border border-zinc-800">
                   <div className="w-20 h-20 rounded-full bg-rose-500/10 flex items-center justify-center mb-2">
                     <Lock className="w-10 h-10 text-rose-500" />
                   </div>
                   <h2 className="text-3xl font-bold text-zinc-100">Caixa Fechado</h2>
                   <p className="text-zinc-400 max-w-md text-center text-base">
-                    Para iniciar as vendas e utilizar o PDV, é necessário abrir o caixa primeiro. Isso garante a segurança e rastreabilidade das transações.
+                    Para iniciar as vendas e utilizar o PDV, é necessário abrir o caixa primeiro.
                   </p>
                   <button
                     onClick={() => setActiveTab('caixa')}

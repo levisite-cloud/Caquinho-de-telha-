@@ -525,6 +525,20 @@ app.post('/api/vendas/:id/devolucao', async (req, res) => {
     const { error: updateError } = await supabase.from('vendas').update({ formapagamento: novaFormaPagamento }).eq('id', id);
     if (updateError) throw updateError;
 
+    // Sincronização Absoluta: Reverter o valor no Caixa atual caso a venda tenha caixa_id
+    if (venda.caixa_id) {
+      const novaMovimentacao = {
+        caixa_id: venda.caixa_id,
+        tipo: 'Estorno',
+        valor: Number(venda.total),
+        motivo: `Devolução Venda #${id}`,
+        observacoes: motivo,
+        operador: operadorNome || 'SISTEMA',
+        data_hora: new Date().toISOString()
+      };
+      await supabase.from('movimentacoes_caixa').insert([novaMovimentacao]);
+    }
+
     await registrarLogAuditoria(operadorId || 'SISTEMA', operadorNome || 'Sistema', 'CANCELAMENTO_VENDA', `Venda devolvida. Motivo: ${motivo}`);
 
     res.json({ sucesso: true });
@@ -1308,6 +1322,9 @@ app.post('/api/caixa/fechar', async (req, res) => {
 
     if (vendas) {
       for (const v of vendas) {
+        if (v.formapagamento.startsWith('DEVOLVIDO') || v.formapagamento.startsWith('Devolvido')) {
+           continue; // Sincronização: ignora as devoluções nos totais de fechamento
+        }
         totalVendido += Number(v.total);
         if (v.formapagamento === 'Dinheiro') totalDinheiro += Number(v.total);
         else if (v.formapagamento === 'PIX') totalPix += Number(v.total);

@@ -93,3 +93,43 @@ ALTER TABLE logs_auditoria ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow all on usuarios" ON usuarios FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on logs_auditoria" ON logs_auditoria FOR ALL USING (true) WITH CHECK (true);
+
+-- Tabela de Caixas
+CREATE TABLE IF NOT EXISTS caixas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  operador TEXT NOT NULL,
+  terminal TEXT NOT NULL,
+  turno TEXT NOT NULL,
+  fundo_inicial NUMERIC NOT NULL,
+  observacoes_abertura TEXT,
+  status TEXT NOT NULL,
+  data_abertura TEXT NOT NULL,
+  data_fechamento TEXT,
+  observacoes_fechamento TEXT,
+  valor_contado NUMERIC,
+  diferenca NUMERIC,
+  justificativa_divergencia TEXT,
+  total_vendido NUMERIC,
+  total_dinheiro NUMERIC,
+  total_pix NUMERIC,
+  total_cartao_credito NUMERIC,
+  total_cartao_debito NUMERIC
+);
+
+-- Tabela de Movimentações de Caixa
+CREATE TABLE IF NOT EXISTS movimentacoes_caixa (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  caixa_id UUID REFERENCES caixas(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL,
+  valor NUMERIC NOT NULL,
+  motivo TEXT,
+  observacoes TEXT,
+  operador TEXT NOT NULL,
+  data_hora TEXT NOT NULL
+);
+
+ALTER TABLE caixas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE movimentacoes_caixa ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all on caixas" ON caixas FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on movimentacoes_caixa" ON movimentacoes_caixa FOR ALL USING (true) WITH CHECK (true);
