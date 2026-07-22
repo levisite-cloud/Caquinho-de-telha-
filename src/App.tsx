@@ -58,6 +58,10 @@ import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig, PixConfig } from './types';
 import { generatePixCopiaECola } from './utils/pixGenerator';
+import { createClient } from '@supabase/supabase-js';
+import { supabaseUrl, supabaseAnonKey } from '../supabaseConfig';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function App() {
   // Autenticação
@@ -312,30 +316,42 @@ export default function App() {
     }
   };
 
-  // Polling de Sincronização (a cada 60s)
+  // Sincronização em Tempo Real via WebSockets (Supabase Realtime)
   useEffect(() => {
-    const fetchSyncStatus = async () => {
-      try {
-        const res = await fetch('/api/sync/status');
-        if (res.ok) {
-          const data = await res.json();
-          setSyncStatus(data);
+    if (!isAuthenticated) return;
+
+    setSyncStatus({ supabase: 'Conectando...' });
+
+    const channel = supabase.channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public' },
+        (payload) => {
+          console.log('Realtime event recebido:', payload);
+          setSyncStatus({ supabase: 'Sincronizando' });
           
-          if (data.supabase === 'Erro' || data.apis === 'Erro') {
-            mostrarFeedback('Atenção: Falha na Sincronização detectada!', 'error');
-          }
+          // Re-fetch dados cruciais da tela sem recarregar a página
+          carregarProdutos();
+          carregarComandas();
+          fetchCaixaAtivo();
+          carregarRelatorio();
+          
+          setTimeout(() => setSyncStatus({ supabase: 'Sincronizado' }), 500);
         }
-      } catch (err) {
-        console.error('Erro ao checar status de sincronização', err);
-      }
+      )
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Supabase Realtime Conectado');
+          setSyncStatus({ supabase: 'Sincronizado' });
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || err) {
+          setSyncStatus({ supabase: 'Erro' });
+          mostrarFeedback('Conexão perdida com o banco de dados em tempo real.', 'error');
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
     };
-    
-    // Buscar imediatamente se logado
-    if (isAuthenticated) {
-      fetchSyncStatus();
-      const intervalId = setInterval(fetchSyncStatus, 60000);
-      return () => clearInterval(intervalId);
-    }
   }, [isAuthenticated]);
 
   const handleForceSync = async () => {
