@@ -43,7 +43,12 @@ import {
   Wallet,
   Lock,
   Unlock,
-  Download
+  Download,
+  Settings,
+  ChevronDown,
+  ChevronUp,
+  LayoutDashboard,
+  Users
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
@@ -118,6 +123,13 @@ export default function App() {
 
   // Controle de Abas
   const [activeTab, setActiveTab] = useState<'pdv' | 'comandas' | 'produtos' | 'relatorios' | 'empresa' | 'impressoras' | 'sincronizacao' | 'nfce' | 'info' | 'caixa'>('pdv');
+  const [openMenus, setOpenMenus] = useState<string[]>(['caixa', 'configuracoes']);
+
+  const toggleMenu = (menuName: string) => {
+    setOpenMenus(prev => 
+      prev.includes(menuName) ? prev.filter(m => m !== menuName) : [...prev, menuName]
+    );
+  };
 
   // Estados dos Dados
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -1381,293 +1393,189 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 flex flex-col font-sans" id="pdv-app-container">
-      {/* Notificação Global de Estoque Mínimo */}
-      {produtos.filter(p => p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5)).length > 0 && (
-        <div className="bg-amber-500/20 border-b border-amber-500/30 text-amber-500 px-4 py-2 flex items-center justify-center gap-2 text-sm font-bold shadow-md z-50">
-          <AlertTriangle className="w-5 h-5" />
-          <span>Atenção: Você possui {produtos.filter(p => p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5)).length} produto(s) com estoque baixo ou zerado! Vá na aba "Produtos" para verificar.</span>
-        </div>
-      )}
-
-      {/* HEADER PRINCIPAL */}
-      <header className="bg-[#121214] text-white shadow-md border-b border-zinc-800" id="main-header">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-500 rounded-xl text-zinc-950 shadow-inner flex items-center justify-center overflow-hidden w-11 h-11 shrink-0">
-              {empresa.logo ? (
-                <img
-                  src={empresa.logo}
-                  alt="Logo"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover rounded-lg"
-                  id="header-empresa-logo"
-                />
-              ) : (
-                <Utensils className="w-6 h-6" />
-              )}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                {empresa.nome} <span className="text-xs bg-amber-500/20 text-amber-400 font-medium px-2 py-0.5 rounded border border-amber-500/30">PDV & Bar</span>
-              </h1>
-              <p className="text-xs text-zinc-400">{empresa.slogan || 'Controle Inteligente de Almoço, Bebidas e Comandas'}</p>
-            </div>
+    <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 flex font-sans overflow-hidden" id="pdv-app-container">
+      {/* SIDEBAR LATERAL */}
+      <aside className="w-64 bg-[#121214] border-r border-zinc-800 flex flex-col shrink-0 hidden md:flex">
+         {/* Logo / Título da Empresa */}
+         <div className="p-4 border-b border-zinc-800 flex items-center gap-3 shrink-0 h-16">
+           <div className="p-1.5 bg-amber-500 rounded-lg text-zinc-950 flex items-center justify-center overflow-hidden w-9 h-9 shrink-0">
+             {empresa.logo ? (
+               <img src={empresa.logo} alt="Logo" referrerPolicy="no-referrer" className="w-full h-full object-cover rounded-md" id="header-empresa-logo" />
+             ) : (
+               <Utensils className="w-5 h-5" />
+             )}
+           </div>
+           <div className="overflow-hidden">
+             <h1 className="text-sm font-bold text-white truncate">
+               {empresa.nome}
+             </h1>
+             <p className="text-[10px] text-amber-500 font-medium tracking-wider">PDV & BAR</p>
+           </div>
+         </div>
+         
+         <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 custom-scrollbar">
+           {/* Root items */}
+           <button onClick={() => setActiveTab('pdv')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'pdv' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
+             <LayoutDashboard className="w-4 h-4" /> Dashboard (PDV)
+           </button>
+           
+           <button onClick={() => { setActiveTab('produtos'); carregarProdutos(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'produtos' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
+             <Package className="w-4 h-4" /> Produtos
+           </button>
+           
+           <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-zinc-600 cursor-not-allowed`} title="Em breve">
+             <Users className="w-4 h-4" /> Clientes
+           </button>
+           
+           <button onClick={() => { setActiveTab('comandas'); carregarComandas(); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'comandas' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
+             <div className="flex items-center gap-3"><ClipboardList className="w-4 h-4" /> Pedidos</div>
+             {comandas.length > 0 && <span className="bg-amber-500 text-zinc-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{comandas.length}</span>}
+           </button>
+           
+           {/* ACCORDION CAIXA */}
+           <div className="mt-2">
+             <button onClick={() => toggleMenu('caixa')} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer text-zinc-300 hover:bg-[#1E1E22]`}>
+               <div className="flex items-center gap-3"><Wallet className="w-4 h-4 text-emerald-500" /> Controle de Caixa</div>
+               {openMenus.includes('caixa') ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+             </button>
+             {openMenus.includes('caixa') && (
+               <div className="flex flex-col gap-1 mt-1 border-l border-zinc-800 ml-5 pl-3">
+                 <button onClick={() => setActiveTab('caixa')} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'caixa' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Abertura / Histórico</button>
+                 <button onClick={() => setShowFecharCaixaModal(true)} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Fechamento de Caixa</button>
+                 <button onClick={() => setShowSangriaModal(true)} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Sangria</button>
+                 <button onClick={() => setShowSuprimentoModal(true)} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Suprimento</button>
+                 <button onClick={() => { setActiveTab('relatorios'); carregarRelatorio(); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'relatorios' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Relatórios</button>
+               </div>
+             )}
+           </div>
+           
+           <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-2 text-zinc-600 cursor-not-allowed`} title="Em breve">
+             <TrendingUp className="w-4 h-4" /> Financeiro
+           </button>
+           
+           {/* ACCORDION CONFIG */}
+           <div className="mt-2">
+             <button onClick={() => toggleMenu('config')} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer text-zinc-300 hover:bg-[#1E1E22]`}>
+               <div className="flex items-center gap-3"><Settings className="w-4 h-4 text-zinc-400" /> Configurações</div>
+               {openMenus.includes('config') ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+             </button>
+             {openMenus.includes('config') && (
+               <div className="flex flex-col gap-1 mt-1 border-l border-zinc-800 ml-5 pl-3">
+                 <button onClick={abrirAbaEmpresa} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'empresa' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Dados da Empresa</button>
+                 <button onClick={abrirAbaImpressoras} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'impressoras' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Impressoras</button>
+                 <button onClick={abrirAbaNfce} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'nfce' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>NFC-e / ACBr</button>
+                 <button onClick={() => setActiveTab('sincronizacao')} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'sincronizacao' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Sincronização</button>
+                 <button onClick={() => { setActiveTab('info'); fetch('/api/system/info').then(res => res.json()).then(setSystemInfo); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'info' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Informações do Sistema</button>
+               </div>
+             )}
+           </div>
+           
+         </nav>
+         <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500 text-center">
+            &copy; {new Date().getFullYear()} Levisite
+         </div>
+      </aside>
+      
+      {/* CONTENT AREA */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        {/* Notificação Global de Estoque Mínimo */}
+        {produtos.filter(p => p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5)).length > 0 && (
+          <div className="bg-amber-500/20 border-b border-amber-500/30 text-amber-500 px-4 py-2 flex items-center justify-center gap-2 text-sm font-bold shadow-md z-50 shrink-0">
+            <AlertTriangle className="w-5 h-5" />
+            <span>Atenção: Você possui {produtos.filter(p => p.controlarEstoque && p.estoque <= (p.estoqueMinimo ?? 5)).length} produto(s) com estoque baixo!</span>
           </div>
+        )}
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs text-zinc-300 font-mono bg-[#1E1E22] px-3 py-1.5 rounded-lg border border-zinc-800">
-              📆 {new Date().toLocaleDateString('pt-BR')}
-            </span>
-
-            <button
-              onClick={() => setShowRenovarModal(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-zinc-950 border border-emerald-500/20 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer"
-              title="Inserir novo código de licença"
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              Renovar Licença
-            </button>
-
-            <button
-              onClick={reiniciarDemonstracao}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-zinc-950 border border-rose-500/20 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer"
-              id="btn-demo-reset"
-              title="Reinicia comandas e limpa vendas do dia para teste limpo"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Resetar Demo
-            </button>
-
-            <button
-              onClick={() => {
-                setIsAuthenticated(false);
-                localStorage.removeItem('pdv_auth');
-              }}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer"
-              title="Sair do sistema"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sair
-            </button>
+        {/* FEEDBACK FLOATING TOAST */}
+        {feedbackMsg && (
+          <div
+            className={`absolute top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl border text-sm max-w-sm animate-bounce ${
+              feedbackMsg.type === 'success'
+                ? 'bg-[#121214] text-emerald-400 border-emerald-500/30 shadow-emerald-500/10'
+                : 'bg-[#121214] text-rose-400 border-rose-500/30 shadow-rose-500/10'
+            }`}
+            id="floating-feedback"
+          >
+            {feedbackMsg.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />}
+            <span>{feedbackMsg.text}</span>
           </div>
-        </div>
-      </header>
+        )}
 
-      {/* FEEDBACK FLOATING TOAST */}
-      {feedbackMsg && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl border text-sm max-w-sm animate-bounce ${
-            feedbackMsg.type === 'success'
-              ? 'bg-[#121214] text-emerald-400 border-emerald-500/30 shadow-emerald-500/10'
-              : 'bg-[#121214] text-rose-400 border-rose-500/30 shadow-rose-500/10'
-          }`}
-          id="floating-feedback"
-        >
-          {feedbackMsg.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />}
-          <span>{feedbackMsg.text}</span>
-        </div>
-      )}
-
-      {/* SUB-HEADER / ABAS DE NAVEGAÇÃO */}
-      <div className="bg-[#121214] border-b border-zinc-800 sticky top-0 z-10 shadow-lg" id="navigation-bar">
-        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center overflow-x-auto">
-          <nav className="flex gap-1 py-2">
-            <button
-              onClick={() => setActiveTab('pdv')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'pdv'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-pdv"
-            >
-              <Receipt className={`w-4 h-4 ${activeTab === 'pdv' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              PDV (Frente de Caixa)
-            </button>
-            <button
-              onClick={() => setActiveTab('caixa')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'caixa'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-caixa"
-            >
-              <Wallet className={`w-4 h-4 ${activeTab === 'caixa' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              Controle de Caixa
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('comandas');
-                carregarComandas();
-              }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'comandas'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-comandas"
-            >
-              <Layers className={`w-4 h-4 ${activeTab === 'comandas' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              Comandas/Mesas
-              {comandas.length > 0 && (
-                <span className="bg-amber-500 text-zinc-950 text-xs font-bold px-1.5 py-0.5 rounded-full ml-1">
-                  {comandas.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('produtos');
-                carregarProdutos();
-              }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'produtos'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-produtos"
-            >
-              <Package className={`w-4 h-4 ${activeTab === 'produtos' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              Produtos
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('relatorios');
-                carregarRelatorio();
-              }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'relatorios'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-relatorios"
-            >
-              <TrendingUp className={`w-4 h-4 ${activeTab === 'relatorios' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              Fechamento
-            </button>
-            <button
-              onClick={abrirAbaEmpresa}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'empresa'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-empresa"
-            >
-              <Store className={`w-4 h-4 ${activeTab === 'empresa' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              Dados da Empresa
-            </button>
-            <button
-              onClick={abrirAbaImpressoras}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'impressoras'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-impressoras"
-            >
-              <Printer className={`w-4 h-4 ${activeTab === 'impressoras' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              Impressora
-            </button>
-            <button
-              onClick={abrirAbaNfce}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'nfce'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-nfce"
-            >
-              <FileText className={`w-4 h-4 ${activeTab === 'nfce' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              NFC-e / ACBr
-            </button>
-            <button
-              onClick={() => setActiveTab('sincronizacao')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'sincronizacao'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-sincronizacao"
-            >
-              <RefreshCw className={`w-4 h-4 ${activeTab === 'sincronizacao' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              Sincronização
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('info');
-                fetch('/api/system/info').then(res => res.json()).then(setSystemInfo);
-              }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'info'
-                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
-              }`}
-              id="tab-info"
-            >
-              <Info className={`w-4 h-4 ${activeTab === 'info' ? 'text-zinc-950' : 'text-amber-500'}`} />
-              Info do Sistema
-            </button>
-          </nav>
-
-          <div className="hidden md:flex items-center gap-4 text-xs text-zinc-400">
+        {/* HEADER TOP BAR */}
+        <header className="bg-[#121214] text-white shadow-md border-b border-zinc-800 h-16 shrink-0 flex items-center px-4 md:px-6 justify-between">
+          <div className="flex items-center gap-4 text-xs text-zinc-400">
             {syncStatus && (
               <div 
-                className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" 
+                className="hidden sm:flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" 
                 onClick={() => setActiveTab('sincronizacao')}
                 title="Status Global de Sincronização"
               >
                 {Object.values(syncStatus).some(s => s === 'Sincronizando') ? (
-                  <span className="flex items-center gap-1 font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-bold">
+                  <span className="flex items-center gap-1 font-mono text-amber-400 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 font-bold">
                     <RefreshCw className="w-3 h-3 animate-spin" /> Sincronizando
                   </span>
                 ) : Object.values(syncStatus).some(s => s === 'Erro') ? (
-                  <span className="flex items-center gap-1 font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-bold">
-                    <span className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse"></span> Falha na Sync
+                  <span className="flex items-center gap-1 font-mono text-rose-400 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20 font-bold">
+                    <span className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse"></span> Falha Sync
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
+                  <span className="flex items-center gap-1 font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 font-bold">
                     <CheckCircle className="w-3 h-3" /> Sincronizado
                   </span>
                 )}
               </div>
             )}
             <div className="flex items-center gap-1.5">
-              <span>Servidor:</span>
-              <span className="flex items-center gap-1 font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
+              <span className="hidden sm:inline">Servidor:</span>
+              <span className="flex items-center gap-1 font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 font-bold">
                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
                 Ativo
               </span>
             </div>
           </div>
-        </div>
-      </div>
+          
+          <div className="flex items-center gap-2 md:gap-3">
+             <span className="text-xs text-zinc-300 font-mono bg-[#1E1E22] px-3 py-1.5 rounded-lg border border-zinc-800 hidden lg:block">
+               📆 {new Date().toLocaleDateString('pt-BR')}
+             </span>
 
-      {/* Modal de Renovação Manual */}
-      {showRenovarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md">
-            <button
-              onClick={() => setShowRenovarModal(false)}
-              className="absolute -top-12 right-0 text-gray-400 hover:text-white"
-            >
-              <X className="w-8 h-8" />
-            </button>
-            <AtivacaoLicenca
-              validadeAtual={licencaValidade}
-              onSuccess={() => {
-                setShowRenovarModal(false);
-                window.location.reload();
-              }}
-            />
+             <button onClick={() => setShowRenovarModal(true)} className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-zinc-950 border border-emerald-500/20 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer" title="Inserir novo código de licença">
+               <KeyRound className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Renovar</span>
+             </button>
+
+             <button onClick={reiniciarDemonstracao} className="flex items-center gap-1.5 text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-zinc-950 border border-rose-500/20 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer" title="Reinicia comandas e limpa vendas do dia para teste limpo">
+               <RefreshCw className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Reset Demo</span>
+             </button>
+
+             <button onClick={() => { setIsAuthenticated(false); localStorage.removeItem('pdv_auth'); }} className="flex items-center gap-1.5 text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer" title="Sair do sistema">
+               <LogOut className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Sair</span>
+             </button>
           </div>
-        </div>
-      )}
+        </header>
 
-      {/* ÁREA DE CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col justify-stretch" id="main-content-wrapper">
+        {/* Modal de Renovação Manual */}
+        {showRenovarModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="relative w-full max-w-md">
+              <button
+                onClick={() => setShowRenovarModal(false)}
+                className="absolute -top-12 right-0 text-gray-400 hover:text-white"
+              >
+                <X className="w-8 h-8" />
+              </button>
+              <AtivacaoLicenca
+                validadeAtual={licencaValidade}
+                onSuccess={() => {
+                  setShowRenovarModal(false);
+                  window.location.reload();
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ÁREA DE CONTEÚDO PRINCIPAL */}
+        <main className="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col justify-stretch overflow-y-auto" id="main-content-wrapper">
         
         {isLoading ? (
           <div className="flex-1 flex flex-col justify-center items-center py-20 gap-3" id="loading-spinner-container">
@@ -3838,13 +3746,13 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-[#0A0A0B] text-zinc-500 py-6 border-t border-zinc-800 text-center text-xs mt-auto flex flex-col items-center justify-center gap-1" id="app-footer">
+      <footer className="bg-[#0A0A0B] text-zinc-500 py-6 border-t border-zinc-800 text-center text-xs mt-auto flex flex-col items-center justify-center gap-1 shrink-0" id="app-footer">
         <p className="font-bold text-zinc-300 text-sm">ERP Bar e Restaurante</p>
         <p>Versão {systemInfo?.versao || 'v1.0.0'}</p>
         <p>Desenvolvido por Levi</p>
         <p className="text-[10px] mt-2">&copy; {new Date().getFullYear()} - Todos os direitos reservados.</p>
       </footer>
-
+      </div>
       {/* MODAL SANGRIA / SUPRIMENTO */}
       {(showSangriaModal || showSuprimentoModal) && (
         <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
