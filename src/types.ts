@@ -39,6 +39,7 @@ export interface Venda {
   nfce_status?: string;
   nfce_xml?: string;
   nfce_recibo?: string;
+  caixa_id?: string;
 }
 
 export interface NfceConfig {
@@ -82,5 +83,58 @@ export interface PrinterConfig {
   apiToken: string;
   tipoImpressora: 'escpos' | 'raw' | 'json';
 }
+export type SyncState = 'Sincronizado' | 'Sincronizando' | 'Erro';
 
+export interface SyncStatus {
+  supabase: SyncState;
+  github: SyncState;
+  vercel: SyncState;
+  apis: SyncState;
+  storage: SyncState;
+  ultimaSincronizacao: string | null;
+}
 
+export interface SyncLog {
+  dataHora: string;
+  usuario: string;
+  tempoExecucaoMs: number;
+  servicos: string[];
+  resultado: 'Sucesso' | 'Erro';
+  detalhes?: string;
+}
+
+export type StatusCaixa = 'Aberto' | 'Fechado';
+
+export interface Caixa {
+  id: string;
+  data_abertura: string;
+  data_fechamento?: string;
+  operador: string;
+  terminal: string;
+  turno: string;
+  fundo_inicial: number;
+  status: StatusCaixa;
+  observacoes_abertura?: string;
+  observacoes_fechamento?: string;
+  valor_contado?: number;
+  diferenca?: number;
+  justificativa_divergencia?: string;
+  total_vendido?: number;
+  total_dinheiro?: number;
+  total_pix?: number;
+  total_cartao_credito?: number;
+  total_cartao_debito?: number;
+}
+
+export type TipoMovimentacao = 'Sangria' | 'Suprimento';
+
+export interface MovimentacaoCaixa {
+  id: string;
+  caixa_id: string;
+  tipo: TipoMovimentacao;
+  valor: number;
+  motivo: string;
+  observacoes?: string;
+  operador: string;
+  data_hora: string;
+}

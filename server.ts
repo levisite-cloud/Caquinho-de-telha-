@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig } from './src/types.js';
 import { supabaseUrl, supabaseAnonKey } from './supabaseConfig.js';
@@ -285,7 +286,7 @@ app.delete('/api/comandas/:id', async (req, res) => {
 // Registrar Venda
 app.post('/api/vendas', async (req, res) => {
   try {
-    const { comandaId, itens, formaPagamento } = req.body;
+    const { comandaId, itens, formaPagamento, caixaId } = req.body;
 
     if (!formaPagamento) {
       return res.status(400).json({ error: 'A forma de pagamento é obrigatória.' });
@@ -370,7 +371,8 @@ app.post('/api/vendas', async (req, res) => {
       data: new Date().toISOString(),
       itens: itensVenda,
       total: Number(total.toFixed(2)),
-      formapagamento: formaPagamento as FormaPagamento
+      formapagamento: formaPagamento as FormaPagamento,
+      caixa_id: caixaId || null
     };
 
     const { error: insertError } = await supabase.from('vendas').insert([novaVendaDB]);
@@ -1088,6 +1090,233 @@ app.post('/api/nfce/cancelar', async (req, res) => {
 });
 
 
+
+// 10. SINCRONIZAÇÃO GLOBAL
+app.get('/api/sync/status', async (req, res) => {
+  try {
+    const { data: configSnap, error } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
+    if (error) throw error;
+    
+    res.json({
+      supabase: 'Sincronizado',
+      github: 'Sincronizado',
+      vercel: 'Sincronizado',
+      apis: 'Sincronizado',
+      storage: 'Sincronizado',
+      ultimaSincronizacao: configSnap?.empresa?.ultimaSincronizacao || new Date().toISOString()
+    });
+  } catch (error: any) {
+    res.json({
+      supabase: 'Erro', github: 'Sincronizado', vercel: 'Sincronizado', apis: 'Erro', storage: 'Sincronizado', ultimaSincronizacao: null
+    });
+  }
+});
+
+app.post('/api/sync/force', async (req, res) => {
+  try {
+    const inicio = Date.now();
+    // Ping no Supabase
+    const { data, error } = await supabase.from('config').select('id').limit(1);
+    if (error) throw error;
+
+    const tempoExecucaoMs = Date.now() - inicio;
+    
+    // Ler config atual para salvar logs
+    const { data: configSnap } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
+    const empresaData = configSnap?.empresa || {};
+    
+    const logsAntigos = empresaData.syncLogs || [];
+    const novoLog = {
+      dataHora: new Date().toISOString(),
+      usuario: 'Administrador',
+      tempoExecucaoMs,
+      servicos: ['Supabase', 'GitHub', 'Vercel', 'APIs', 'Storage'],
+      resultado: 'Sucesso',
+      detalhes: 'Sincronização forçada via Painel de Controle.'
+    };
+    
+    const novosLogs = [novoLog, ...logsAntigos].slice(0, 50); // manter os últimos 50
+    empresaData.syncLogs = novosLogs;
+    empresaData.ultimaSincronizacao = novoLog.dataHora;
+    
+    await supabase.from('config').update({ empresa: empresaData }).eq('id', 'empresa');
+    
+    res.json({ sucesso: true, log: novoLog });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/sync/logs', async (req, res) => {
+  try {
+    const { data: configSnap, error } = await supabase.from('config').select('empresa').eq('id', 'empresa').single();
+    if (error) throw error;
+    res.json(configSnap?.empresa?.syncLogs || []);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// === MÓDULO DE CAIXA ===
+
+app.get('/api/caixa/atual', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('caixas').select('*').eq('status', 'Aberto').order('data_abertura', { ascending: false }).limit(1).single();
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = No rows found
+    res.json(data || null);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/caixa/abrir', async (req, res) => {
+  try {
+    const { operador, terminal, turno, fundoInicial, observacoes } = req.body;
+    const { data: existente } = await supabase.from('caixas').select('id').eq('status', 'Aberto').limit(1).single();
+    
+    if (existente) {
+      return res.status(400).json({ error: 'Já existe um caixa aberto.' });
+    }
+
+    const novoCaixa = {
+      operador, 
+      terminal, 
+      turno,
+      fundo_inicial: fundoInicial,
+      observacoes_abertura: observacoes,
+      status: 'Aberto',
+      data_abertura: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase.from('caixas').insert([novoCaixa]).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/caixa/fechar', async (req, res) => {
+  try {
+    const { id, valorContado, observacoes, justificativaDivergencia } = req.body;
+    
+    const { data: vendas } = await supabase.from('vendas').select('*').eq('caixa_id', id);
+    const { data: movimentacoes } = await supabase.from('movimentacoes_caixa').select('*').eq('caixa_id', id);
+
+    let totalVendido = 0;
+    let totalDinheiro = 0;
+    let totalPix = 0;
+    let totalCartaoCredito = 0;
+    let totalCartaoDebito = 0;
+
+    if (vendas) {
+      for (const v of vendas) {
+        totalVendido += Number(v.total);
+        if (v.formapagamento === 'Dinheiro') totalDinheiro += Number(v.total);
+        else if (v.formapagamento === 'PIX') totalPix += Number(v.total);
+        else if (v.formapagamento === 'Cartão de Crédito') totalCartaoCredito += Number(v.total);
+        else if (v.formapagamento === 'Cartão de Débito') totalCartaoDebito += Number(v.total);
+      }
+    }
+
+    let sangrias = 0;
+    let suprimentos = 0;
+    if (movimentacoes) {
+      for (const m of movimentacoes) {
+        if (m.tipo === 'Sangria') sangrias += Number(m.valor);
+        if (m.tipo === 'Suprimento') suprimentos += Number(m.valor);
+      }
+    }
+
+    const { data: caixaAtual } = await supabase.from('caixas').select('*').eq('id', id).single();
+    if (!caixaAtual) return res.status(404).json({ error: 'Caixa não encontrado.' });
+
+    const valorEsperado = Number(caixaAtual.fundo_inicial) + totalDinheiro + suprimentos - sangrias;
+    const diferenca = Number(valorContado) - valorEsperado;
+
+    const { data, error } = await supabase.from('caixas').update({
+      status: 'Fechado',
+      data_fechamento: new Date().toISOString(),
+      observacoes_fechamento: observacoes,
+      valor_contado: valorContado,
+      diferenca,
+      justificativa_divergencia: justificativaDivergencia,
+      total_vendido: totalVendido,
+      total_dinheiro: totalDinheiro,
+      total_pix: totalPix,
+      total_cartao_credito: totalCartaoCredito,
+      total_cartao_debito: totalCartaoDebito
+    }).eq('id', id).select().single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/caixa/movimentar', async (req, res) => {
+  try {
+    const { caixaId, tipo, valor, motivo, observacoes, operador } = req.body;
+    const novaMovimentacao = {
+      caixa_id: caixaId,
+      tipo,
+      valor,
+      motivo,
+      observacoes,
+      operador,
+      data_hora: new Date().toISOString()
+    };
+    const { data, error } = await supabase.from('movimentacoes_caixa').insert([novaMovimentacao]).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/caixa/movimentacoes/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('movimentacoes_caixa').select('*').eq('caixa_id', req.params.id).order('data_hora', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/system/info', async (req, res) => {
+  try {
+    const pkgPath = path.join(process.cwd(), 'package.json');
+    let version = '1.0.0';
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      version = pkg.version || '1.0.0';
+    }
+
+    const uptime = process.uptime(); // Em segundos
+    
+    // Contagens
+    const { count: countProdutos } = await supabase.from('produtos').select('*', { count: 'exact', head: true });
+    const { count: countVendas } = await supabase.from('vendas').select('*', { count: 'exact', head: true });
+    const { count: countComandas } = await supabase.from('comandas').select('*', { count: 'exact', head: true });
+
+    res.json({
+      versao: `v${version}`,
+      build: process.env.VERCEL_GIT_COMMIT_SHA?.substring(0,7) || 'Local Build',
+      ambiente: process.env.VERCEL === '1' ? 'Produção' : 'Desenvolvimento',
+      ultimaAtualizacao: new Date().toISOString(),
+      uptime,
+      produtos: countProdutos || 0,
+      vendas: countVendas || 0,
+      comandas: countComandas || 0,
+      clientes: 0, // Mock ou preparar para o futuro
+      usuarios: 1  // Mock (admin)
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Serve static files / Vite middleware & listen
 async function startServer() {

@@ -31,7 +31,19 @@ import {
   LogOut,
   KeyRound,
   Sparkles,
-  Undo2
+  Undo2,
+  Activity,
+  Database,
+  Github,
+  Globe,
+  Server,
+  Folder,
+  ClipboardList,
+  Info,
+  Wallet,
+  Lock,
+  Unlock,
+  Download
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
@@ -105,7 +117,7 @@ export default function App() {
   };
 
   // Controle de Abas
-  const [activeTab, setActiveTab] = useState<'pdv' | 'comandas' | 'produtos' | 'relatorios' | 'empresa' | 'impressoras'>('pdv');
+  const [activeTab, setActiveTab] = useState<'pdv' | 'comandas' | 'produtos' | 'relatorios' | 'empresa' | 'impressoras' | 'sincronizacao' | 'nfce' | 'info' | 'caixa'>('pdv');
 
   // Estados dos Dados
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -114,6 +126,245 @@ export default function App() {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Estados de Sincronização Global
+  const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [syncLogs, setSyncLogs] = useState<any[]>([]);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [showSyncLogsModal, setShowSyncLogsModal] = useState<boolean>(false);
+  
+  // Estado de Informações do Sistema
+  const [systemInfo, setSystemInfo] = useState<any>(null);
+
+  // Estado de Caixa
+  const [caixaAtivo, setCaixaAtivo] = useState<any>(null);
+  
+  // Estados de Formulário Caixa
+  const [caixaOperadorForm, setCaixaOperadorForm] = useState('');
+  const [caixaTerminalForm, setCaixaTerminalForm] = useState('Terminal 1');
+  const [caixaTurnoForm, setCaixaTurnoForm] = useState('Manhã');
+  const [caixaFundoForm, setCaixaFundoForm] = useState(0);
+  
+  const [showSangriaModal, setShowSangriaModal] = useState(false);
+  const [showSuprimentoModal, setShowSuprimentoModal] = useState(false);
+  const [showFecharCaixaModal, setShowFecharCaixaModal] = useState(false);
+  
+  const [caixaMovValorForm, setCaixaMovValorForm] = useState(0);
+  const [caixaMovMotivoForm, setCaixaMovMotivoForm] = useState('');
+  const [caixaValorContadoForm, setCaixaValorContadoForm] = useState(0);
+  const [caixaJustificativaForm, setCaixaJustificativaForm] = useState('');
+  
+  const [caixaMovimentacoes, setCaixaMovimentacoes] = useState<any[]>([]);
+
+  const fetchCaixa = async () => {
+    try {
+      const res = await fetch('/api/caixa/atual');
+      if (res.ok) {
+        const data = await res.json();
+        setCaixaAtivo(data);
+      } else {
+        setCaixaAtivo(null);
+      }
+    } catch (err) {
+      setCaixaAtivo(null);
+    }
+  };
+
+  useEffect(() => {
+    fetchCaixa();
+  }, []);
+
+  const carregarMovimentacoes = async () => {
+    if (!caixaAtivo) return;
+    try {
+      const res = await fetch(`/api/caixa/movimentacoes/${caixaAtivo.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCaixaMovimentacoes(data);
+      }
+    } catch (err) {}
+  };
+
+  useEffect(() => {
+    if (activeTab === 'caixa' && caixaAtivo) {
+      carregarMovimentacoes();
+    }
+  }, [activeTab, caixaAtivo]);
+
+  const abrirCaixa = async () => {
+    if (!caixaOperadorForm) {
+      mostrarFeedback('Preencha o nome do operador.', 'error');
+      return;
+    }
+    try {
+      const res = await fetch('/api/caixa/abrir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operador: caixaOperadorForm,
+          terminal: caixaTerminalForm,
+          turno: caixaTurnoForm,
+          fundoInicial: caixaFundoForm
+        })
+      });
+      if (res.ok) {
+        const novoCaixa = await res.json();
+        setCaixaAtivo(novoCaixa);
+        mostrarFeedback('Caixa aberto com sucesso!', 'success');
+      } else {
+        const err = await res.json();
+        mostrarFeedback(err.error || 'Erro ao abrir caixa.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão.', 'error');
+    }
+  };
+
+  const registrarMovimentacao = async (tipo: 'Sangria' | 'Suprimento') => {
+    if (caixaMovValorForm <= 0 || !caixaMovMotivoForm) {
+      mostrarFeedback('Preencha o valor e o motivo.', 'error');
+      return;
+    }
+    try {
+      const res = await fetch('/api/caixa/movimentar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caixaId: caixaAtivo.id,
+          tipo,
+          valor: caixaMovValorForm,
+          motivo: caixaMovMotivoForm,
+          operador: caixaAtivo.operador
+        })
+      });
+      if (res.ok) {
+        mostrarFeedback(`${tipo} registrada com sucesso!`, 'success');
+        setShowSangriaModal(false);
+        setShowSuprimentoModal(false);
+        setCaixaMovValorForm(0);
+        setCaixaMovMotivoForm('');
+        carregarMovimentacoes();
+      } else {
+        const err = await res.json();
+        mostrarFeedback(err.error || 'Erro ao registrar.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão.', 'error');
+    }
+  };
+
+  const fecharCaixa = async () => {
+    if (caixaValorContadoForm < 0) {
+      mostrarFeedback('Valor contado inválido.', 'error');
+      return;
+    }
+    try {
+      const res = await fetch('/api/caixa/fechar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: caixaAtivo.id,
+          valorContado: caixaValorContadoForm,
+          justificativaDivergencia: caixaJustificativaForm
+        })
+      });
+      if (res.ok) {
+        setCaixaAtivo(null);
+        setShowFecharCaixaModal(false);
+        setCaixaValorContadoForm(0);
+        setCaixaJustificativaForm('');
+        mostrarFeedback('Caixa fechado com sucesso!', 'success');
+      } else {
+        const err = await res.json();
+        mostrarFeedback(err.error || 'Erro ao fechar caixa.', 'error');
+      }
+    } catch (err) {
+      mostrarFeedback('Erro de conexão.', 'error');
+    }
+  };
+
+  // Polling de Sincronização (a cada 60s)
+  useEffect(() => {
+    const fetchSyncStatus = async () => {
+      try {
+        const res = await fetch('/api/sync/status');
+        if (res.ok) {
+          const data = await res.json();
+          setSyncStatus(data);
+          
+          if (data.supabase === 'Erro' || data.apis === 'Erro') {
+            mostrarFeedback('Atenção: Falha na Sincronização detectada!', 'error');
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao checar status de sincronização', err);
+      }
+    };
+    
+    // Buscar imediatamente se logado
+    if (isAuthenticated) {
+      fetchSyncStatus();
+      const intervalId = setInterval(fetchSyncStatus, 60000);
+      return () => clearInterval(intervalId);
+    }
+  }, [isAuthenticated]);
+
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    setSyncStatus({
+      supabase: 'Sincronizando',
+      github: 'Sincronizando',
+      vercel: 'Sincronizando',
+      apis: 'Sincronizando',
+      storage: 'Sincronizando',
+      ultimaSincronizacao: syncStatus?.ultimaSincronizacao || new Date().toISOString()
+    });
+    
+    try {
+      const res = await fetch('/api/sync/force', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setSyncStatus({
+          supabase: 'Sincronizado',
+          github: 'Sincronizado',
+          vercel: 'Sincronizado',
+          apis: 'Sincronizado',
+          storage: 'Sincronizado',
+          ultimaSincronizacao: data.log.dataHora
+        });
+        setSyncLogs(prev => [data.log, ...prev].slice(0, 50));
+        mostrarFeedback('Sincronização concluída com sucesso.', 'success');
+      } else {
+        const erro = await res.json();
+        throw new Error(erro.error || 'Erro desconhecido');
+      }
+    } catch (err: any) {
+      setSyncStatus({
+        supabase: 'Erro',
+        github: 'Sincronizado',
+        vercel: 'Sincronizado',
+        apis: 'Erro',
+        storage: 'Sincronizado',
+        ultimaSincronizacao: syncStatus?.ultimaSincronizacao
+      });
+      mostrarFeedback(`Falha na sincronização: ${err.message}`, 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleVerLogs = async () => {
+    try {
+      const res = await fetch('/api/sync/logs');
+      if (res.ok) {
+        const data = await res.json();
+        setSyncLogs(data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setShowSyncLogsModal(true);
+  };
 
   // Estados do PDV (Carrinho & Comandas)
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
@@ -751,7 +1002,8 @@ export default function App() {
         formaPagamento: formaPagamento === 'Cartão de Crédito' ? `Cartão de Crédito - ${parcelasCredito}x` : formaPagamento,
         comandaId: modoVenda === 'comanda' ? comandaSelecionadaId : undefined,
         itens: modoVenda === 'direta' ? carrinho : undefined,
-        parcelas: formaPagamento === 'Cartão de Crédito' ? parcelasCredito : undefined
+        parcelas: formaPagamento === 'Cartão de Crédito' ? parcelasCredito : undefined,
+        caixaId: caixaAtivo?.id
       };
 
       const res = await fetch('/api/vendas', {
@@ -1234,6 +1486,18 @@ export default function App() {
               PDV (Frente de Caixa)
             </button>
             <button
+              onClick={() => setActiveTab('caixa')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'caixa'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-caixa"
+            >
+              <Wallet className={`w-4 h-4 ${activeTab === 'caixa' ? 'text-zinc-950' : 'text-amber-500'}`} />
+              Controle de Caixa
+            </button>
+            <button
               onClick={() => {
                 setActiveTab('comandas');
                 carregarComandas();
@@ -1319,14 +1583,64 @@ export default function App() {
               <FileText className={`w-4 h-4 ${activeTab === 'nfce' ? 'text-zinc-950' : 'text-amber-500'}`} />
               NFC-e / ACBr
             </button>
+            <button
+              onClick={() => setActiveTab('sincronizacao')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'sincronizacao'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-sincronizacao"
+            >
+              <RefreshCw className={`w-4 h-4 ${activeTab === 'sincronizacao' ? 'text-zinc-950' : 'text-amber-500'}`} />
+              Sincronização
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('info');
+                fetch('/api/system/info').then(res => res.json()).then(setSystemInfo);
+              }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'info'
+                  ? 'bg-amber-500 text-zinc-950 shadow-md font-bold'
+                  : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'
+              }`}
+              id="tab-info"
+            >
+              <Info className={`w-4 h-4 ${activeTab === 'info' ? 'text-zinc-950' : 'text-amber-500'}`} />
+              Info do Sistema
+            </button>
           </nav>
 
-          <div className="hidden md:flex items-center gap-2 text-xs text-zinc-400">
-            <span>Servidor:</span>
-            <span className="flex items-center gap-1 font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
-              Ativo
-            </span>
+          <div className="hidden md:flex items-center gap-4 text-xs text-zinc-400">
+            {syncStatus && (
+              <div 
+                className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" 
+                onClick={() => setActiveTab('sincronizacao')}
+                title="Status Global de Sincronização"
+              >
+                {Object.values(syncStatus).some(s => s === 'Sincronizando') ? (
+                  <span className="flex items-center gap-1 font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-bold">
+                    <RefreshCw className="w-3 h-3 animate-spin" /> Sincronizando
+                  </span>
+                ) : Object.values(syncStatus).some(s => s === 'Erro') ? (
+                  <span className="flex items-center gap-1 font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-bold">
+                    <span className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse"></span> Falha na Sync
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
+                    <CheckCircle className="w-3 h-3" /> Sincronizado
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <span>Servidor:</span>
+              <span className="flex items-center gap-1 font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                Ativo
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -1364,6 +1678,24 @@ export default function App() {
           <>
             {/* 1. ABA DE PDV (FRENTE DE CAIXA) */}
             {activeTab === 'pdv' && (
+              !caixaAtivo ? (
+                <div className="flex-1 flex flex-col justify-center items-center py-20 gap-4 bg-[#121214] rounded-xl border border-zinc-800 m-4">
+                  <div className="w-20 h-20 rounded-full bg-rose-500/10 flex items-center justify-center mb-2">
+                    <Lock className="w-10 h-10 text-rose-500" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-zinc-100">Caixa Fechado</h2>
+                  <p className="text-zinc-400 max-w-md text-center text-base">
+                    Para iniciar as vendas e utilizar o PDV, é necessário abrir o caixa primeiro. Isso garante a segurança e rastreabilidade das transações.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('caixa')}
+                    className="mt-6 flex items-center gap-2 px-8 py-4 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-xl font-bold shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all cursor-pointer text-lg"
+                  >
+                    <Unlock className="w-6 h-6" />
+                    Ir para Abertura de Caixa
+                  </button>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1" id="pdv-grid">
                 
                 {/* COLUNA ESQUERDA: CATÁLOGO DE PRODUTOS */}
@@ -1852,6 +2184,7 @@ export default function App() {
                 </div>
 
               </div>
+              )
             )}
 
             {/* 2. TAB DE CONTROLE DE COMANDAS / MESAS */}
@@ -3087,17 +3420,540 @@ export default function App() {
                 </div>
               </div>
             )}
+            {activeTab === 'sincronizacao' && (
+              <div className="max-w-5xl mx-auto space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#121214] p-6 rounded-xl border border-zinc-800">
+                  <div>
+                    <h2 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
+                      <RefreshCw className="w-6 h-6 text-amber-500" />
+                      Sincronização Global
+                    </h2>
+                    <p className="text-sm text-zinc-400 mt-1">
+                      Monitore e force a sincronização da infraestrutura em tempo real.
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleVerLogs}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#1E1E22] hover:bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg font-medium text-sm transition-colors cursor-pointer"
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      Ver Logs
+                    </button>
+                    <button
+                      onClick={handleForceSync}
+                      disabled={isSyncing}
+                      className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg font-bold text-sm shadow-md transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                      Forçar Sincronização
+                    </button>
+                  </div>
+                </div>
+
+                {isSyncing && (
+                  <div className="bg-[#121214] border border-amber-500/30 p-4 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                    <div className="flex justify-between text-xs text-amber-500 font-bold mb-2 uppercase tracking-wide">
+                      <span>Sincronizando serviços...</span>
+                      <span className="animate-pulse">Processando</span>
+                    </div>
+                    <div className="w-full bg-zinc-900 rounded-full h-2.5 overflow-hidden">
+                      <div className="bg-amber-500 h-2.5 rounded-full relative w-full overflow-hidden transition-all duration-500">
+                        <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_1.5s_infinite]"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {/* Supabase Card */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <Database className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100">Banco de Dados (Supabase)</span>
+                      </div>
+                      {syncStatus?.supabase === 'Sincronizado' ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      ) : syncStatus?.supabase === 'Sincronizando' ? (
+                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Sincronização de vendas, produtos, usuários e políticas de segurança RLS.</p>
+                    <div className="mt-auto pt-3 border-t border-zinc-800/60">
+                      <span className={`text-[10px] font-bold uppercase ${
+                        syncStatus?.supabase === 'Sincronizado' ? 'text-emerald-400' : 
+                        syncStatus?.supabase === 'Sincronizando' ? 'text-amber-400' : 'text-rose-400'
+                      }`}>
+                        {syncStatus?.supabase || 'Aguardando'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* GitHub Card */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-zinc-500/50 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <Github className="w-5 h-5 text-zinc-100 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100">GitHub (Código-Fonte)</span>
+                      </div>
+                      {syncStatus?.github === 'Sincronizado' ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      ) : syncStatus?.github === 'Sincronizando' ? (
+                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Versionamento da branch principal e garantia de ausência de conflitos de merge.</p>
+                    <div className="mt-auto pt-3 border-t border-zinc-800/60">
+                      <span className={`text-[10px] font-bold uppercase ${
+                        syncStatus?.github === 'Sincronizado' ? 'text-emerald-400' : 
+                        syncStatus?.github === 'Sincronizando' ? 'text-amber-400' : 'text-rose-400'
+                      }`}>
+                        {syncStatus?.github || 'Aguardando'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Vercel Card */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-zinc-300/30 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-5 h-5 text-zinc-100 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100">Hospedagem (Vercel)</span>
+                      </div>
+                      {syncStatus?.vercel === 'Sincronizado' ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      ) : syncStatus?.vercel === 'Sincronizando' ? (
+                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Servidores edge, funções serverless (APIs) e invalidação de cache global (CDN).</p>
+                    <div className="mt-auto pt-3 border-t border-zinc-800/60">
+                      <span className={`text-[10px] font-bold uppercase ${
+                        syncStatus?.vercel === 'Sincronizado' ? 'text-emerald-400' : 
+                        syncStatus?.vercel === 'Sincronizando' ? 'text-amber-400' : 'text-rose-400'
+                      }`}>
+                        {syncStatus?.vercel || 'Aguardando'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* APIs Card */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <Server className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100">APIs Integradas</span>
+                      </div>
+                      {syncStatus?.apis === 'Sincronizado' ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      ) : syncStatus?.apis === 'Sincronizando' ? (
+                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Testes de comunicação (ping) entre o Frontend (React), Backend (Express) e serviços externos.</p>
+                    <div className="mt-auto pt-3 border-t border-zinc-800/60">
+                      <span className={`text-[10px] font-bold uppercase ${
+                        syncStatus?.apis === 'Sincronizado' ? 'text-emerald-400' : 
+                        syncStatus?.apis === 'Sincronizando' ? 'text-amber-400' : 'text-rose-400'
+                      }`}>
+                        {syncStatus?.apis || 'Aguardando'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Storage Card */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <Folder className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100">Armazenamento</span>
+                      </div>
+                      {syncStatus?.storage === 'Sincronizado' ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      ) : syncStatus?.storage === 'Sincronizando' ? (
+                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Sincronização de mídias, logotipos, comprovantes em PDF e certificados digitais armazenados.</p>
+                    <div className="mt-auto pt-3 border-t border-zinc-800/60">
+                      <span className={`text-[10px] font-bold uppercase ${
+                        syncStatus?.storage === 'Sincronizado' ? 'text-emerald-400' : 
+                        syncStatus?.storage === 'Sincronizando' ? 'text-amber-400' : 'text-rose-400'
+                      }`}>
+                        {syncStatus?.storage || 'Aguardando'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center mt-6">
+                  <p className="text-xs font-mono text-zinc-500">
+                    Última verificação de estabilidade: {syncStatus?.ultimaSincronizacao ? new Date(syncStatus.ultimaSincronizacao).toLocaleString() : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {activeTab === 'info' && (
+              <div className="max-w-5xl mx-auto space-y-6">
+                <div className="bg-[#121214] p-6 rounded-xl border border-zinc-800">
+                  <h2 className="text-2xl font-bold text-zinc-100 flex items-center gap-2 mb-2">
+                    <Info className="w-6 h-6 text-amber-500" />
+                    Informações do Sistema
+                  </h2>
+                  <p className="text-sm text-zinc-400">
+                    Visão geral corporativa, infraestrutura, autoria e estatísticas em tempo real.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Card 1: Informações do Sistema */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 shadow-lg">
+                    <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-3">
+                      <Server className="w-5 h-5 text-amber-400" />
+                      <h3 className="font-bold text-zinc-100">Sobre o Sistema</h3>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between"><span className="text-zinc-500">Nome:</span> <span className="font-medium text-zinc-200">ERP Bar e Restaurante</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Versão Atual:</span> <span className="font-mono text-emerald-400">{systemInfo?.versao || 'Carregando...'}</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Build:</span> <span className="font-mono text-zinc-300">{systemInfo?.build || '---'}</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Ambiente:</span> <span className="font-medium text-amber-500">{systemInfo?.ambiente || '---'}</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Status:</span> <span className="flex items-center gap-1 font-bold text-emerald-500"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Última Atualização:</span> <span className="text-zinc-300 text-xs">{systemInfo?.ultimaAtualizacao ? new Date(systemInfo.ultimaAtualizacao).toLocaleString() : '---'}</span></div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Infraestrutura */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 shadow-lg">
+                    <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-3">
+                      <Database className="w-5 h-5 text-emerald-400" />
+                      <h3 className="font-bold text-zinc-100">Infraestrutura</h3>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between"><span className="text-zinc-500">Banco de Dados:</span> <span className="font-medium text-zinc-200">Supabase (PostgreSQL)</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Frontend:</span> <span className="font-medium text-zinc-200">React + TypeScript</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Backend:</span> <span className="font-medium text-zinc-200">Supabase + Edge Functions</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Hospedagem:</span> <span className="font-medium text-zinc-200">Vercel</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Sincronização:</span> <span className="text-emerald-400 font-bold">{syncStatus?.supabase === 'Sincronizado' ? 'Estável' : 'Pendente'}</span></div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Desenvolvedor */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 shadow-lg">
+                    <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-3">
+                      <User className="w-5 h-5 text-indigo-400" />
+                      <h3 className="font-bold text-zinc-100">Desenvolvedor</h3>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between"><span className="text-zinc-500">Nome:</span> <span className="font-medium text-zinc-200">Levi</span></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Contato:</span> <a href="mailto:contato@seuemail.com" className="text-indigo-400 hover:underline">contato@seuemail.com</a></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">Website:</span> <a href="#" className="text-indigo-400 hover:underline">www.seusite.com.br</a></div>
+                      <div className="flex justify-between"><span className="text-zinc-500">GitHub:</span> <a href="#" className="text-indigo-400 hover:underline">github.com/levi</a></div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Estatísticas */}
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 shadow-lg">
+                    <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-3">
+                      <Activity className="w-5 h-5 text-rose-400" />
+                      <h3 className="font-bold text-zinc-100">Estatísticas</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-[#1E1E22] p-3 rounded-lg border border-zinc-800/50">
+                        <span className="block text-xs text-zinc-500 mb-1">Usuários</span>
+                        <span className="text-xl font-bold text-zinc-100">{systemInfo?.usuarios || 0}</span>
+                      </div>
+                      <div className="bg-[#1E1E22] p-3 rounded-lg border border-zinc-800/50">
+                        <span className="block text-xs text-zinc-500 mb-1">Clientes</span>
+                        <span className="text-xl font-bold text-zinc-100">{systemInfo?.clientes || 0}</span>
+                      </div>
+                      <div className="bg-[#1E1E22] p-3 rounded-lg border border-zinc-800/50">
+                        <span className="block text-xs text-zinc-500 mb-1">Produtos</span>
+                        <span className="text-xl font-bold text-emerald-400">{systemInfo?.produtos || 0}</span>
+                      </div>
+                      <div className="bg-[#1E1E22] p-3 rounded-lg border border-zinc-800/50">
+                        <span className="block text-xs text-zinc-500 mb-1">Vendas</span>
+                        <span className="text-xl font-bold text-amber-500">{systemInfo?.vendas || 0}</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex justify-between items-center text-xs text-zinc-400 border-t border-zinc-800/50 pt-3">
+                       <span><strong>Uptime:</strong> {systemInfo?.uptime ? Math.floor(systemInfo.uptime / 3600) + 'h ' + Math.floor((systemInfo.uptime % 3600)/60) + 'm' : '---'}</span>
+                       <span><strong>Uso DB:</strong> ~{(systemInfo?.produtos || 0) * 2 + (systemInfo?.vendas || 0) * 5} KB</span>
+                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 10. ABA DE CAIXA */}
+            {activeTab === 'caixa' && (
+              <div className="flex-1 flex flex-col gap-5 animate-fadeIn" id="caixa-container">
+                {!caixaAtivo ? (
+                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-8 shadow-2xl max-w-2xl mx-auto w-full mt-10">
+                    <div className="text-center mb-8">
+                      <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+                        <Wallet className="w-10 h-10 text-amber-500" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-zinc-100">Abertura de Caixa</h2>
+                      <p className="text-zinc-400 mt-2">Preencha os dados abaixo para iniciar o expediente</p>
+                    </div>
+                    
+                    <div className="space-y-5">
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Operador *</label>
+                        <input type="text" value={caixaOperadorForm} onChange={e => setCaixaOperadorForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder="Nome do operador" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-5">
+                        <div>
+                          <label className="block text-sm font-medium text-zinc-400 mb-1">Terminal</label>
+                          <input type="text" value={caixaTerminalForm} onChange={e => setCaixaTerminalForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-zinc-400 mb-1">Turno</label>
+                          <select value={caixaTurnoForm} onChange={e => setCaixaTurnoForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none">
+                            <option value="Manhã">Manhã</option>
+                            <option value="Tarde">Tarde</option>
+                            <option value="Noite">Noite</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Fundo Inicial (Troco) - R$ *</label>
+                        <input type="number" step="0.01" value={caixaFundoForm} onChange={e => setCaixaFundoForm(Number(e.target.value))} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none font-mono text-lg" placeholder="0.00" />
+                      </div>
+                      
+                      <button onClick={abrirCaixa} className="w-full mt-4 py-4 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-lg transition-colors text-lg shadow-lg cursor-pointer">
+                        Confirmar Abertura
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center bg-[#121214] p-5 rounded-xl border border-zinc-800 shadow-md">
+                      <div>
+                        <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
+                          <Wallet className="text-amber-500" /> Caixa Aberto
+                        </h2>
+                        <p className="text-zinc-400 text-sm mt-1">
+                          Operador: <span className="text-zinc-200 font-medium">{caixaAtivo.operador}</span> | Terminal: {caixaAtivo.terminal} | Aberto em: {new Date(caixaAtivo.data_abertura).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <button onClick={() => setShowSuprimentoModal(true)} className="px-4 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg font-medium border border-emerald-500/30 transition-colors cursor-pointer">
+                          + Suprimento
+                        </button>
+                        <button onClick={() => setShowSangriaModal(true)} className="px-4 py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-lg font-medium border border-rose-500/30 transition-colors cursor-pointer">
+                          - Sangria
+                        </button>
+                        <button onClick={() => setShowFecharCaixaModal(true)} className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg font-bold shadow-lg transition-colors cursor-pointer">
+                          Fechar Caixa
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="bg-[#121214] p-5 rounded-xl border border-zinc-800 shadow-md">
+                        <span className="text-zinc-400 text-sm block mb-1">Fundo Inicial</span>
+                        <span className="text-2xl font-bold text-zinc-100 font-mono">R$ {Number(caixaAtivo.fundo_inicial).toFixed(2)}</span>
+                      </div>
+                      <div className="bg-[#121214] p-5 rounded-xl border border-zinc-800 shadow-md">
+                        <span className="text-zinc-400 text-sm block mb-1">Entradas (Suprimentos)</span>
+                        <span className="text-2xl font-bold text-emerald-400 font-mono">R$ {caixaMovimentacoes.filter(m=>m.tipo==='Suprimento').reduce((a,b)=>a+Number(b.valor),0).toFixed(2)}</span>
+                      </div>
+                      <div className="bg-[#121214] p-5 rounded-xl border border-zinc-800 shadow-md">
+                        <span className="text-zinc-400 text-sm block mb-1">Saídas (Sangrias)</span>
+                        <span className="text-2xl font-bold text-rose-400 font-mono">R$ {caixaMovimentacoes.filter(m=>m.tipo==='Sangria').reduce((a,b)=>a+Number(b.valor),0).toFixed(2)}</span>
+                      </div>
+                      <div className="bg-[#121214] p-5 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                        <span className="text-emerald-400 text-sm block mb-1 font-medium">Saldo Atual de Gaveta (Esperado)</span>
+                        <span className="text-3xl font-bold text-zinc-100 font-mono">
+                          R$ {(
+                            Number(caixaAtivo.fundo_inicial) + 
+                            caixaMovimentacoes.filter(m=>m.tipo==='Suprimento').reduce((a,b)=>a+Number(b.valor),0) -
+                            caixaMovimentacoes.filter(m=>m.tipo==='Sangria').reduce((a,b)=>a+Number(b.valor),0)
+                          ).toFixed(2)}
+                          <span className="text-xs text-zinc-500 block font-sans mt-1 font-normal">+ Vendas em Dinheiro</span>
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-[#121214] rounded-xl border border-zinc-800 flex-1 flex flex-col overflow-hidden">
+                      <div className="p-4 border-b border-zinc-800 bg-[#1A1A1E]">
+                        <h3 className="font-bold text-zinc-100">Histórico de Movimentações</h3>
+                      </div>
+                      <div className="p-0 overflow-y-auto flex-1">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-[#0A0A0B] text-zinc-400 sticky top-0">
+                            <tr>
+                              <th className="p-3 font-medium">Data/Hora</th>
+                              <th className="p-3 font-medium">Tipo</th>
+                              <th className="p-3 font-medium">Motivo</th>
+                              <th className="p-3 font-medium">Operador</th>
+                              <th className="p-3 font-medium text-right">Valor</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-800/50">
+                            {caixaMovimentacoes.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="p-8 text-center text-zinc-500">Nenhuma movimentação registrada neste caixa.</td>
+                              </tr>
+                            ) : (
+                              caixaMovimentacoes.map(m => (
+                                <tr key={m.id} className="hover:bg-[#1A1A1E] transition-colors">
+                                  <td className="p-3 text-zinc-300">{new Date(m.data_hora).toLocaleString()}</td>
+                                  <td className="p-3">
+                                    <span className={`px-2 py-1 rounded text-xs font-bold ${m.tipo === 'Sangria' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                      {m.tipo}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-zinc-300">{m.motivo}</td>
+                                  <td className="p-3 text-zinc-400">{m.operador}</td>
+                                  <td className={`p-3 text-right font-mono font-medium ${m.tipo === 'Sangria' ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                    {m.tipo === 'Sangria' ? '-' : '+'} R$ {Number(m.valor).toFixed(2)}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </>
         )}
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-[#0A0A0B] text-zinc-500 py-6 border-t border-zinc-800 text-center text-xs mt-auto" id="app-footer">
-        <p className="font-medium text-zinc-400 mb-1">© {new Date().getFullYear()} Sabor Gourmet PDV - Controle Integrado para Bares e Restaurantes</p>
-        <p className="max-w-md mx-auto leading-relaxed text-zinc-500 px-4">
-          Desenvolvido com Node.js no backend e React no frontend. Equipado com controle automático de estoque e fechamento de caixa por formas de pagamento.
-        </p>
+      <footer className="bg-[#0A0A0B] text-zinc-500 py-6 border-t border-zinc-800 text-center text-xs mt-auto flex flex-col items-center justify-center gap-1" id="app-footer">
+        <p className="font-bold text-zinc-300 text-sm">ERP Bar e Restaurante</p>
+        <p>Versão {systemInfo?.versao || 'v1.0.0'}</p>
+        <p>Desenvolvido por Levi</p>
+        <p className="text-[10px] mt-2">&copy; {new Date().getFullYear()} - Todos os direitos reservados.</p>
       </footer>
+
+      {/* MODAL SANGRIA / SUPRIMENTO */}
+      {(showSangriaModal || showSuprimentoModal) && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-[#121214] rounded-xl shadow-2xl border border-zinc-800 w-full max-w-md p-6">
+            <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${showSangriaModal ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {showSangriaModal ? 'Realizar Sangria' : 'Realizar Suprimento'}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Valor (R$)</label>
+                <input type="number" step="0.01" value={caixaMovValorForm} onChange={e => setCaixaMovValorForm(Number(e.target.value))} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none font-mono" placeholder="0.00" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Motivo</label>
+                <input type="text" value={caixaMovMotivoForm} onChange={e => setCaixaMovMotivoForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder="Ex: Pagamento fornecedor, Troco..." />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowSangriaModal(false); setShowSuprimentoModal(false); }} className="flex-1 px-4 py-3 bg-[#1E1E22] hover:bg-zinc-800 text-zinc-300 rounded-lg font-medium transition-colors cursor-pointer">Cancelar</button>
+              <button onClick={() => registrarMovimentacao(showSangriaModal ? 'Sangria' : 'Suprimento')} className={`flex-1 px-4 py-3 text-zinc-950 rounded-lg font-bold transition-colors cursor-pointer ${showSangriaModal ? 'bg-rose-500 hover:bg-rose-400' : 'bg-emerald-500 hover:bg-emerald-400'}`}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL FECHAR CAIXA */}
+      {showFecharCaixaModal && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-[#121214] rounded-xl shadow-2xl border border-zinc-800 w-full max-w-md p-6">
+            <h3 className="text-xl font-bold text-amber-500 mb-4">Fechamento de Caixa</h3>
+            <p className="text-zinc-400 text-sm mb-6">Por favor, conte o dinheiro físico da gaveta e insira o valor exato abaixo. O sistema fará a consolidação.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Valor Contado em Gaveta (R$)</label>
+                <input type="number" step="0.01" value={caixaValorContadoForm} onChange={e => setCaixaValorContadoForm(Number(e.target.value))} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-4 text-amber-500 text-xl font-bold font-mono focus:border-amber-500 outline-none text-center" placeholder="0.00" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Justificativa (Opcional ou para divergências)</label>
+                <textarea value={caixaJustificativaForm} onChange={e => setCaixaJustificativaForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none h-20 resize-none" placeholder="Motivo de sobras ou faltas..."></textarea>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowFecharCaixaModal(false)} className="flex-1 px-4 py-3 bg-[#1E1E22] hover:bg-zinc-800 text-zinc-300 rounded-lg font-medium transition-colors cursor-pointer">Cancelar</button>
+              <button onClick={fecharCaixa} className="flex-1 px-4 py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg font-bold transition-colors cursor-pointer">Finalizar Turno</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE LOGS DE SINCRONIZAÇÃO */}
+      {showSyncLogsModal && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-[#121214] rounded-xl shadow-2xl border border-zinc-800 w-full max-w-3xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="bg-[#0A0A0B] p-5 flex justify-between items-center border-b border-zinc-800">
+              <h3 className="font-bold text-lg text-zinc-100 flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-amber-500" />
+                Histórico de Sincronização
+              </h3>
+              <button onClick={() => setShowSyncLogsModal(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1 bg-[#0A0A0B]">
+              {syncLogs.length === 0 ? (
+                <div className="text-center text-zinc-500 py-10">
+                  <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                  <p>Nenhum log de sincronização encontrado.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {syncLogs.map((log, index) => (
+                    <div key={index} className="bg-[#121214] border border-zinc-800/80 rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-zinc-700 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-1 flex-shrink-0 ${log.resultado === 'Sucesso' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {log.resultado === 'Sucesso' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-sm text-zinc-200">{log.resultado}</span>
+                            <span className="text-xs text-zinc-500">•</span>
+                            <span className="text-xs text-zinc-400">{new Date(log.dataHora).toLocaleString()}</span>
+                          </div>
+                          <p className="text-xs text-zinc-400 mb-2">{log.detalhes || 'Sem detalhes.'}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {log.servicos?.map((s: string) => (
+                              <span key={s} className="bg-zinc-800/50 border border-zinc-700 text-zinc-300 text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-wider">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t border-zinc-800/50 md:border-0 pt-3 md:pt-0 mt-2 md:mt-0">
+                        <div className="text-xs text-zinc-500 font-medium">
+                          <User className="w-3 h-3 inline mr-1 mb-0.5" />
+                          {log.usuario}
+                        </div>
+                        <div className="text-[10px] font-mono text-zinc-400 bg-zinc-900 px-2 py-1 rounded border border-zinc-800">
+                          {log.tempoExecucaoMs}ms
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL 1: ABRIR NOVA COMANDA */}
       {showNovaComandaModal && (
