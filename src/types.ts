@@ -135,6 +135,26 @@ export interface MovimentacaoCaixa {
   valor: number;
   motivo: string;
   observacoes?: string;
-  operador: string;
+  data_hora: string;
+}
+
+export type CargoUsuario = 'Gerente' | 'Caixa' | 'Atendente';
+
+export interface Usuario {
+  id: string;
+  nome: string;
+  cargo: CargoUsuario;
+  pin: string; // 4 a 6 digitos
+  data_criacao: string;
+}
+
+export type AcaoAuditoria = 'LOGIN' | 'VENDA' | 'CANCELAMENTO_VENDA' | 'SANGRIA' | 'SUPRIMENTO' | 'ABERTURA_CAIXA' | 'FECHAMENTO_CAIXA' | 'PRODUTO_SALVO' | 'COMANDA_ABERTA';
+
+export interface LogAuditoria {
+  id: string;
+  usuario_id: string;
+  usuario_nome: string;
+  acao: AcaoAuditoria;
+  detalhes: string;
   data_hora: string;
 }

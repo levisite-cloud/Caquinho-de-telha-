@@ -68,3 +68,28 @@ CREATE POLICY "Allow all on comandas" ON comandas FOR ALL USING (true) WITH CHEC
 CREATE POLICY "Allow all on vendas" ON vendas FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on config" ON config FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on licencas" ON licencas FOR ALL USING (true) WITH CHECK (true);
+
+-- Tabela de Usuários (Operadores)
+CREATE TABLE IF NOT EXISTS usuarios (
+  id TEXT PRIMARY KEY,
+  nome TEXT NOT NULL,
+  cargo TEXT NOT NULL,
+  pin TEXT NOT NULL,
+  data_criacao TEXT NOT NULL
+);
+
+-- Tabela de Logs de Auditoria
+CREATE TABLE IF NOT EXISTS logs_auditoria (
+  id TEXT PRIMARY KEY,
+  usuario_id TEXT NOT NULL,
+  usuario_nome TEXT NOT NULL,
+  acao TEXT NOT NULL,
+  detalhes TEXT,
+  data_hora TEXT NOT NULL
+);
+
+ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE logs_auditoria ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all on usuarios" ON usuarios FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on logs_auditoria" ON logs_auditoria FOR ALL USING (true) WITH CHECK (true);

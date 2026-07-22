@@ -56,10 +56,13 @@ import {
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
-import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig, PixConfig } from './types';
+import { Produto, Comanda, Venda, ItemCarrinho, FormaPagamento, Empresa, PrinterConfig, PixConfig, SyncStatus, Caixa, MovimentacaoCaixa, Usuario, LogAuditoria } from './types';
 import { generatePixCopiaECola } from './utils/pixGenerator';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseUrl, supabaseAnonKey } from '../supabaseConfig';
+import { PinLockScreen } from './components/PinLockScreen';
+import { AdminUsuarios } from './pages/AdminUsuarios';
+import { AdminAuditoria } from './pages/AdminAuditoria';
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -71,6 +74,7 @@ export default function App() {
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string>('');
+  const [operadorAtivo, setOperadorAtivo] = useState<Usuario | null>(null);
 
   // Licenciamento
   const [isCheckingLicense, setIsCheckingLicense] = useState(true);
@@ -223,7 +227,8 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          operador: caixaOperadorForm,
+          operador: operadorAtivo?.nome || caixaOperadorForm,
+          operadorId: operadorAtivo?.id,
           terminal: caixaTerminalForm,
           turno: caixaTurnoForm,
           fundoInicial: caixaFundoForm
@@ -266,7 +271,8 @@ export default function App() {
           tipo,
           valor: caixaMovValorForm,
           motivo: caixaMovObsForm ? `${caixaMovMotivoForm} | Obs: ${caixaMovObsForm}` : caixaMovMotivoForm,
-          operador: caixaAtivo.operador
+          operador: operadorAtivo?.nome || caixaAtivo.operador,
+          operadorId: operadorAtivo?.id
         })
       });
       if (res.ok) {
@@ -298,7 +304,9 @@ export default function App() {
         body: JSON.stringify({
           id: caixaAtivo.id,
           valorContado: caixaValorContadoForm,
-          justificativaDivergencia: caixaJustificativaForm
+          justificativaDivergencia: caixaJustificativaForm,
+          operadorId: operadorAtivo?.id,
+          operadorNome: operadorAtivo?.nome
         })
       });
       if (res.ok) {
@@ -1048,7 +1056,9 @@ export default function App() {
         comandaId: modoVenda === 'comanda' ? comandaSelecionadaId : undefined,
         itens: modoVenda === 'direta' ? carrinho : undefined,
         parcelas: formaPagamento === 'Cartão de Crédito' ? parcelasCredito : undefined,
-        caixaId: caixaAtivo?.id
+        caixaId: caixaAtivo?.id,
+        operadorId: operadorAtivo?.id,
+        operadorNome: operadorAtivo?.nome
       };
 
       const res = await fetch('/api/vendas', {
@@ -1096,7 +1106,7 @@ export default function App() {
       const res = await fetch(`/api/vendas/${vendaDevolucaoId}/devolucao`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ motivo: motivoDevolucao })
+        body: JSON.stringify({ motivo: motivoDevolucao, operadorId: operadorAtivo?.id, operadorNome: operadorAtivo?.nome })
       });
       if (res.ok) {
         mostrarFeedback('Venda devolvida com sucesso!');
@@ -1354,6 +1364,10 @@ export default function App() {
     );
   }
 
+  if (isAuthenticated && !operadorAtivo) {
+    return <PinLockScreen onUnlock={setOperadorAtivo} />;
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#0A0A0B] flex flex-col items-center justify-center p-4 selection:bg-amber-500/30 text-zinc-100 font-sans">
@@ -1498,7 +1512,8 @@ export default function App() {
                <div className="flex flex-col gap-1 mt-1 border-l border-zinc-800 ml-5 pl-3">
                  <button onClick={() => { setActiveTab('caixa'); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'caixa' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Abertura / Histórico</button>
                  <button onClick={() => { setShowFecharCaixaModal(true); setIsMobileMenuOpen(false); }} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Fechamento de Caixa</button>
-                 <button onClick={() => { setActiveTab('relatorios'); carregarRelatorio(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'relatorios' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Relatórios</button>
+                 <button onClick={() => { setActiveTab('relatorios'); carregarRelatorio(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'relatorios' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Relatórios Financeiros</button>
+                 <button onClick={() => { setActiveTab('auditoria'); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'auditoria' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Auditoria de Ações</button>
                </div>
              )}
            </div>
@@ -1519,6 +1534,7 @@ export default function App() {
                  <button onClick={() => { abrirAbaImpressoras(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'impressoras' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Impressoras</button>
                  <button onClick={() => { abrirAbaNfce(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'nfce' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>NFC-e / ACBr</button>
                  <button onClick={() => { setActiveTab('sincronizacao'); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'sincronizacao' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Sincronização</button>
+                 <button onClick={() => { setActiveTab('usuarios'); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'usuarios' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Usuários / Operadores</button>
                  <button onClick={() => { setActiveTab('info'); fetch('/api/system/info').then(res => res.json()).then(setSystemInfo); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'info' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Informações do Sistema</button>
                </div>
              )}
@@ -1610,7 +1626,14 @@ export default function App() {
                <RefreshCw className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Reset Demo</span>
              </button>
 
-             <button onClick={() => { setIsAuthenticated(false); localStorage.removeItem('pdv_auth'); }} className="flex items-center gap-1.5 text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer" title="Sair do sistema">
+             <div className="hidden sm:flex items-center gap-2 bg-zinc-800/80 px-3 py-1.5 rounded-lg border border-zinc-700">
+               <div className="w-5 h-5 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                 {operadorAtivo?.nome?.charAt(0) || 'O'}
+               </div>
+               <span className="text-xs font-semibold text-zinc-300">{operadorAtivo?.nome || 'Operador'}</span>
+             </div>
+
+             <button onClick={() => { setOperadorAtivo(null); setIsAuthenticated(false); localStorage.removeItem('pdv_auth'); }} className="flex items-center gap-1.5 text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-all duration-200 px-3 py-1.5 rounded-lg cursor-pointer" title="Sair do sistema">
                <LogOut className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Sair</span>
              </button>
           </div>
@@ -1648,7 +1671,9 @@ export default function App() {
         ) : (
           <>
             {/* 1. ABA DE PDV (FRENTE DE CAIXA) */}
-            {activeTab === 'pdv' && (
+            {activeTab === 'usuarios' && <AdminUsuarios />}
+          {activeTab === 'auditoria' && <AdminAuditoria />}
+          {activeTab === 'pdv' && (
               !caixaAtivo ? (
                 <div className="flex-1 flex flex-col justify-center items-center py-20 gap-4 bg-[#121214] rounded-xl border border-zinc-800 m-4">
                   <div className="w-20 h-20 rounded-full bg-rose-500/10 flex items-center justify-center mb-2">

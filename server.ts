@@ -164,6 +164,96 @@ app.delete('/api/produtos/:id', async (req, res) => {
   }
 });
 
+// === HELPER DE AUDITORIA ===
+export const registrarLogAuditoria = async (usuario_id: string, usuario_nome: string, acao: string, detalhes: string) => {
+  try {
+    if (!usuario_id || !usuario_nome) return;
+    const novoLog = {
+      id: Math.random().toString(36).substring(2, 9),
+      usuario_id,
+      usuario_nome,
+      acao,
+      detalhes,
+      data_hora: new Date().toISOString()
+    };
+    await supabase.from('logs_auditoria').insert([novoLog]);
+  } catch (err) {
+    console.error('Erro ao registrar auditoria:', err);
+  }
+};
+
+// 1.5 MÓDULO DE USUÁRIOS E AUDITORIA
+app.get('/api/usuarios', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('usuarios').select('*');
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Erro ao buscar usuários' });
+  }
+});
+
+app.post('/api/usuarios', async (req, res) => {
+  try {
+    const { nome, cargo, pin } = req.body;
+    if (!nome || !cargo || !pin) return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
+    
+    const { data: existente } = await supabase.from('usuarios').select('id').eq('pin', pin).single();
+    if (existente) return res.status(400).json({ error: 'Este PIN já está em uso por outro operador.' });
+
+    const novoUsuario = {
+      id: Math.random().toString(36).substring(2, 9),
+      nome,
+      cargo,
+      pin,
+      data_criacao: new Date().toISOString()
+    };
+    const { error } = await supabase.from('usuarios').insert([novoUsuario]);
+    if (error) throw error;
+    res.status(201).json(novoUsuario);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Erro ao criar usuário: ' + error.message });
+  }
+});
+
+app.delete('/api/usuarios/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('usuarios').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ message: 'Usuário removido.' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Erro ao remover usuário.' });
+  }
+});
+
+app.post('/api/usuarios/login', async (req, res) => {
+  try {
+    const { pin } = req.body;
+    if (!pin) return res.status(400).json({ error: 'PIN não informado.' });
+    
+    const { data, error } = await supabase.from('usuarios').select('*').eq('pin', pin).single();
+    if (error || !data) {
+      return res.status(401).json({ error: 'PIN incorreto ou usuário não encontrado.' });
+    }
+    
+    await registrarLogAuditoria(data.id, data.nome, 'LOGIN', 'Operador iniciou sessão no PDV');
+    
+    res.json({ success: true, usuario: data });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Erro ao realizar login.' });
+  }
+});
+
+app.get('/api/logs', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('logs_auditoria').select('*').order('data_hora', { ascending: false }).limit(100);
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Erro ao buscar logs' });
+  }
+});
+
 // 2. MÓDULO DE COMANDAS
 
 // Listar comandas ativas
@@ -286,7 +376,7 @@ app.delete('/api/comandas/:id', async (req, res) => {
 // Registrar Venda
 app.post('/api/vendas', async (req, res) => {
   try {
-    const { comandaId, itens, formaPagamento, caixaId } = req.body;
+    const { comandaId, itens, formaPagamento, caixaId, operadorId, operadorNome } = req.body;
 
     if (!formaPagamento) {
       return res.status(400).json({ error: 'A forma de pagamento é obrigatória.' });
@@ -378,6 +468,8 @@ app.post('/api/vendas', async (req, res) => {
     const { error: insertError } = await supabase.from('vendas').insert([novaVendaDB]);
     if (insertError) throw insertError;
 
+    await registrarLogAuditoria(operadorId || 'SISTEMA', operadorNome || 'Sistema', 'VENDA', `Venda registrada. Total: R$ ${novaVendaDB.total}`);
+
     res.status(201).json({
       id: novaVendaDB.id,
       comandaId: novaVendaDB.comandaid,
@@ -397,7 +489,7 @@ app.post('/api/vendas', async (req, res) => {
 app.post('/api/vendas/:id/devolucao', async (req, res) => {
   try {
     const { id } = req.params;
-    const { motivo } = req.body;
+    const { motivo, operadorId, operadorNome } = req.body;
     
     const { data: venda, error: getError } = await supabase.from('vendas').select('*').eq('id', id).single();
     if (getError || !venda) return res.status(404).json({ error: 'Venda não encontrada' });
@@ -432,6 +524,8 @@ app.post('/api/vendas/:id/devolucao', async (req, res) => {
     const novaFormaPagamento = `DEVOLVIDO|${motivo || 'Sem motivo'}|${venda.formapagamento}`;
     const { error: updateError } = await supabase.from('vendas').update({ formapagamento: novaFormaPagamento }).eq('id', id);
     if (updateError) throw updateError;
+
+    await registrarLogAuditoria(operadorId || 'SISTEMA', operadorNome || 'Sistema', 'CANCELAMENTO_VENDA', `Venda devolvida. Motivo: ${motivo}`);
 
     res.json({ sucesso: true });
   } catch (error: any) {
@@ -1171,7 +1265,7 @@ app.get('/api/caixa/atual', async (req, res) => {
 
 app.post('/api/caixa/abrir', async (req, res) => {
   try {
-    const { operador, terminal, turno, fundoInicial, observacoes } = req.body;
+    const { operador, terminal, turno, fundoInicial, observacoes, operadorId } = req.body;
     const { data: existente } = await supabase.from('caixas').select('id').eq('status', 'Aberto').limit(1).single();
     
     if (existente) {
@@ -1190,6 +1284,9 @@ app.post('/api/caixa/abrir', async (req, res) => {
     
     const { data, error } = await supabase.from('caixas').insert([novoCaixa]).select().single();
     if (error) throw error;
+    
+    await registrarLogAuditoria(operadorId || 'SISTEMA', operador || 'Sistema', 'ABERTURA_CAIXA', `Caixa aberto. Fundo: R$ ${fundoInicial}`);
+    
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1198,7 +1295,7 @@ app.post('/api/caixa/abrir', async (req, res) => {
 
 app.post('/api/caixa/fechar', async (req, res) => {
   try {
-    const { id, valorContado, observacoes, justificativaDivergencia } = req.body;
+    const { id, valorContado, observacoes, justificativaDivergencia, operadorId, operadorNome } = req.body;
     
     const { data: vendas } = await supabase.from('vendas').select('*').eq('caixa_id', id);
     const { data: movimentacoes } = await supabase.from('movimentacoes_caixa').select('*').eq('caixa_id', id);
@@ -1249,6 +1346,9 @@ app.post('/api/caixa/fechar', async (req, res) => {
     }).eq('id', id).select().single();
 
     if (error) throw error;
+    
+    await registrarLogAuditoria(operadorId || 'SISTEMA', operadorNome || 'Sistema', 'FECHAMENTO_CAIXA', `Caixa fechado. Valor Contado: R$ ${valorContado}`);
+    
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1257,7 +1357,7 @@ app.post('/api/caixa/fechar', async (req, res) => {
 
 app.post('/api/caixa/movimentar', async (req, res) => {
   try {
-    const { caixaId, tipo, valor, motivo, observacoes, operador } = req.body;
+    const { caixaId, tipo, valor, motivo, observacoes, operador, operadorId } = req.body;
     const novaMovimentacao = {
       caixa_id: caixaId,
       tipo,
@@ -1269,6 +1369,9 @@ app.post('/api/caixa/movimentar', async (req, res) => {
     };
     const { data, error } = await supabase.from('movimentacoes_caixa').insert([novaMovimentacao]).select().single();
     if (error) throw error;
+    
+    await registrarLogAuditoria(operadorId || 'SISTEMA', operador || 'Sistema', tipo.toUpperCase(), `Caixa Movimentado: ${tipo} R$ ${valor}. Motivo: ${motivo}`);
+    
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
