@@ -168,6 +168,7 @@ export default function App() {
   
   const [caixaMovValorForm, setCaixaMovValorForm] = useState(0);
   const [caixaMovMotivoForm, setCaixaMovMotivoForm] = useState('');
+  const [caixaMovObsForm, setCaixaMovObsForm] = useState('');
   const [caixaValorContadoForm, setCaixaValorContadoForm] = useState(0);
   const [caixaJustificativaForm, setCaixaJustificativaForm] = useState('');
   
@@ -260,7 +261,7 @@ export default function App() {
           caixaId: caixaAtivo.id,
           tipo,
           valor: caixaMovValorForm,
-          motivo: caixaMovMotivoForm,
+          motivo: caixaMovObsForm ? `${caixaMovMotivoForm} | Obs: ${caixaMovObsForm}` : caixaMovMotivoForm,
           operador: caixaAtivo.operador
         })
       });
@@ -270,6 +271,7 @@ export default function App() {
         setShowSuprimentoModal(false);
         setCaixaMovValorForm(0);
         setCaixaMovMotivoForm('');
+        setCaixaMovObsForm('');
         carregarMovimentacoes();
       } else {
         const err = await res.json();
@@ -3732,17 +3734,17 @@ export default function App() {
                           <span className="text-lg font-bold text-zinc-100 font-mono">R$ {Number(caixaAtivo.fundo_inicial).toFixed(2)}</span>
                         </div>
                       </div>
-                      <div className="bg-[#121214] p-4 rounded-xl border border-zinc-800 shadow-sm flex items-center gap-4">
-                         <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20"><ArrowUpCircle className="text-emerald-400 w-5 h-5" /></div>
+                      <div onClick={() => setShowSuprimentoModal(true)} className="bg-[#121214] p-4 rounded-xl border border-zinc-800 hover:border-emerald-500/50 hover:bg-[#161618] transition-colors cursor-pointer shadow-sm flex items-center gap-4 group">
+                         <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors"><ArrowUpCircle className="text-emerald-400 w-5 h-5" /></div>
                          <div>
-                          <span className="text-zinc-400 text-xs block mb-0.5 font-medium uppercase tracking-wide">Entradas (Suprimentos)</span>
+                          <span className="text-zinc-400 text-xs block mb-0.5 font-medium uppercase tracking-wide group-hover:text-emerald-400/80 transition-colors">Entradas (Suprimentos)</span>
                           <span className="text-lg font-bold text-emerald-400 font-mono">R$ {totalSuprimentosCaixa.toFixed(2)}</span>
                          </div>
                       </div>
-                      <div className="bg-[#121214] p-4 rounded-xl border border-zinc-800 shadow-sm flex items-center gap-4">
-                        <div className="p-3 bg-rose-500/10 rounded-lg border border-rose-500/20"><ArrowDownCircle className="text-rose-400 w-5 h-5" /></div>
+                      <div onClick={() => setShowSangriaModal(true)} className="bg-[#121214] p-4 rounded-xl border border-zinc-800 hover:border-rose-500/50 hover:bg-[#161618] transition-colors cursor-pointer shadow-sm flex items-center gap-4 group">
+                        <div className="p-3 bg-rose-500/10 rounded-lg border border-rose-500/20 group-hover:bg-rose-500/20 transition-colors"><ArrowDownCircle className="text-rose-400 w-5 h-5" /></div>
                         <div>
-                          <span className="text-zinc-400 text-xs block mb-0.5 font-medium uppercase tracking-wide">Saídas (Sangrias)</span>
+                          <span className="text-zinc-400 text-xs block mb-0.5 font-medium uppercase tracking-wide group-hover:text-rose-400/80 transition-colors">Saídas (Sangrias)</span>
                           <span className="text-lg font-bold text-rose-400 font-mono">R$ {totalSangriasCaixa.toFixed(2)}</span>
                         </div>
                       </div>
@@ -3841,14 +3843,19 @@ export default function App() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase tracking-wide">Motivo / Observação</label>
-                <input type="text" value={caixaMovMotivoForm} onChange={e => setCaixaMovMotivoForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder="Ex: Pagamento fornecedor, Troco inicial..." />
+                <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase tracking-wide">Motivo da Movimentação</label>
+                <input type="text" value={caixaMovMotivoForm} onChange={e => setCaixaMovMotivoForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder={isSangria ? "Ex: Pagamento fornecedor, Sangria de excesso..." : "Ex: Troco inicial, Reforço de caixa..."} />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase tracking-wide">Observação (Opcional)</label>
+                <input type="text" value={caixaMovObsForm} onChange={e => setCaixaMovObsForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder="Detalhes adicionais..." />
               </div>
             </div>
             
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setShowSangriaModal(false); setShowSuprimentoModal(false); setCaixaMovValorForm(0); setCaixaMovMotivoForm(''); }} className="flex-1 px-4 py-3 bg-[#1A1A1E] hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 rounded-lg font-bold transition-colors cursor-pointer text-sm">Cancelar</button>
-              <button onClick={() => registrarMovimentacao(isSangria ? 'Sangria' : 'Suprimento')} className={`flex-1 px-4 py-3 text-zinc-950 rounded-lg font-bold transition-colors cursor-pointer text-sm shadow-md ${isSangria ? 'bg-rose-500 hover:bg-rose-400' : 'bg-emerald-500 hover:bg-emerald-400'}`}>Confirmar Movimentação</button>
+              <button onClick={() => { setShowSangriaModal(false); setShowSuprimentoModal(false); setCaixaMovValorForm(0); setCaixaMovMotivoForm(''); setCaixaMovObsForm(''); }} className="flex-1 px-4 py-3 bg-[#1A1A1E] hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 rounded-lg font-bold transition-colors cursor-pointer text-sm">Cancelar</button>
+              <button onClick={() => registrarMovimentacao(isSangria ? 'Sangria' : 'Suprimento')} className={`flex-1 px-4 py-3 text-zinc-950 rounded-lg font-bold transition-colors cursor-pointer text-sm shadow-md ${isSangria ? 'bg-rose-500 hover:bg-rose-400' : 'bg-emerald-500 hover:bg-emerald-400'}`}>{isSangria ? 'Confirmar Sangria' : 'Confirmar Suprimento'}</button>
             </div>
           </div>
         </div>
