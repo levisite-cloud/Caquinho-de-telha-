@@ -3801,15 +3801,13 @@ export default function App() {
 
       </div>
       {/* MODAL SANGRIA / SUPRIMENTO */}
-      {(showSangriaModal || showSuprimentoModal) && (() => {
-        const isSangria = showSangriaModal;
-        const saldoPrevisto = saldoFisicoGaveta + (isSangria ? -Number(caixaMovValorForm || 0) : Number(caixaMovValorForm || 0));
-        return (
+      {/* MODAL SANGRIA / SUPRIMENTO */}
+      {(showSangriaModal || showSuprimentoModal) && (
         <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-[#121214] rounded-xl shadow-2xl border border-zinc-800 w-full max-w-md p-6">
-            <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${isSangria ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {isSangria ? <ArrowDownCircle className="w-6 h-6" /> : <ArrowUpCircle className="w-6 h-6" />}
-              {isSangria ? 'Realizar Sangria' : 'Realizar Suprimento'}
+            <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${showSangriaModal ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {showSangriaModal ? <ArrowDownCircle className="w-6 h-6" /> : <ArrowUpCircle className="w-6 h-6" />}
+              {showSangriaModal ? 'Realizar Sangria' : 'Realizar Suprimento'}
             </h3>
             
             <div className="bg-[#1A1A1E] border border-zinc-800/80 rounded-lg p-4 mb-5 flex justify-between items-center">
@@ -3834,17 +3832,17 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase tracking-wide">Valor da Movimentação (R$)</label>
-                <input type="number" step="0.01" value={caixaMovValorForm || ''} onChange={e => setCaixaMovValorForm(Number(e.target.value))} className={`w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 focus:outline-none font-mono text-lg transition-colors ${isSangria ? 'focus:border-rose-500/80 text-rose-400' : 'focus:border-emerald-500/80 text-emerald-400'}`} placeholder="0.00" />
+                <input type="number" step="0.01" value={caixaMovValorForm || ''} onChange={e => setCaixaMovValorForm(Number(e.target.value))} className={`w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 focus:outline-none font-mono text-lg transition-colors ${showSangriaModal ? 'focus:border-rose-500/80 text-rose-400' : 'focus:border-emerald-500/80 text-emerald-400'}`} placeholder="0.00" />
               </div>
               
-              <div className={`p-3 rounded-lg border flex justify-between items-center ${isSangria ? 'bg-rose-500/5 border-rose-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
-                <span className={`text-xs font-medium ${isSangria ? 'text-rose-400/70' : 'text-emerald-400/70'}`}>Saldo Previsto Após Operação:</span>
-                <span className={`font-mono font-bold text-lg ${isSangria ? 'text-rose-400' : 'text-emerald-400'}`}>R$ {saldoPrevisto.toFixed(2)}</span>
+              <div className={`p-3 rounded-lg border flex justify-between items-center ${showSangriaModal ? 'bg-rose-500/5 border-rose-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
+                <span className={`text-xs font-medium ${showSangriaModal ? 'text-rose-400/70' : 'text-emerald-400/70'}`}>Saldo Previsto Após Operação:</span>
+                <span className={`font-mono font-bold text-lg ${showSangriaModal ? 'text-rose-400' : 'text-emerald-400'}`}>R$ {(saldoFisicoGaveta + (showSangriaModal ? -Number(caixaMovValorForm || 0) : Number(caixaMovValorForm || 0))).toFixed(2)}</span>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase tracking-wide">Motivo da Movimentação</label>
-                <input type="text" value={caixaMovMotivoForm} onChange={e => setCaixaMovMotivoForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder={isSangria ? "Ex: Pagamento fornecedor, Sangria de excesso..." : "Ex: Troco inicial, Reforço de caixa..."} />
+                <input type="text" value={caixaMovMotivoForm} onChange={e => setCaixaMovMotivoForm(e.target.value)} className="w-full bg-[#0A0A0B] border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:border-amber-500 outline-none" placeholder={showSangriaModal ? "Ex: Pagamento fornecedor, Sangria de excesso..." : "Ex: Troco inicial, Reforço de caixa..."} />
               </div>
 
               <div>
@@ -3855,12 +3853,11 @@ export default function App() {
             
             <div className="flex gap-3 mt-6">
               <button onClick={() => { setShowSangriaModal(false); setShowSuprimentoModal(false); setCaixaMovValorForm(0); setCaixaMovMotivoForm(''); setCaixaMovObsForm(''); }} className="flex-1 px-4 py-3 bg-[#1A1A1E] hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 rounded-lg font-bold transition-colors cursor-pointer text-sm">Cancelar</button>
-              <button onClick={() => registrarMovimentacao(isSangria ? 'Sangria' : 'Suprimento')} className={`flex-1 px-4 py-3 text-zinc-950 rounded-lg font-bold transition-colors cursor-pointer text-sm shadow-md ${isSangria ? 'bg-rose-500 hover:bg-rose-400' : 'bg-emerald-500 hover:bg-emerald-400'}`}>{isSangria ? 'Confirmar Sangria' : 'Confirmar Suprimento'}</button>
+              <button onClick={() => registrarMovimentacao(showSangriaModal ? 'Sangria' : 'Suprimento')} className={`flex-1 px-4 py-3 text-zinc-950 rounded-lg font-bold transition-colors cursor-pointer text-sm shadow-md ${showSangriaModal ? 'bg-rose-500 hover:bg-rose-400' : 'bg-emerald-500 hover:bg-emerald-400'}`}>{showSangriaModal ? 'Confirmar Sangria' : 'Confirmar Suprimento'}</button>
             </div>
           </div>
         </div>
-        );
-      })}
+      )}
 
       {/* MODAL FECHAR CAIXA */}
       {showFecharCaixaModal && (
