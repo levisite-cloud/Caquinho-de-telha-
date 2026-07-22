@@ -3695,74 +3695,74 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121214] p-5 rounded-xl border border-zinc-800 shadow-md gap-4">
-                      <div>
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-[#121214] p-4 rounded-xl border border-zinc-800 shadow-md gap-4">
+                      <div className="flex-1">
                         <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-                          <Wallet className="text-amber-500" /> Caixa Aberto
+                          <Wallet className="text-amber-500 w-6 h-6" /> Caixa Aberto
                         </h2>
-                        <p className="text-zinc-400 text-sm mt-1">
+                        <p className="text-zinc-400 text-xs mt-1">
                           Operador: <span className="text-zinc-200 font-medium">{caixaAtivo.operador}</span> | Terminal: {caixaAtivo.terminal} | Aberto em: {new Date(caixaAtivo.data_abertura).toLocaleString()}
                         </p>
                       </div>
                       
-                      <div className="bg-[#1A1A1E] px-6 py-3 rounded-lg border border-emerald-500/30 flex items-center gap-4">
+                      <div className="bg-[#1A1A1E] px-5 py-2.5 rounded-lg border border-emerald-500/30 flex items-center gap-3 shadow-inner w-full lg:w-auto justify-between lg:justify-start">
                         <div>
-                          <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider block mb-0.5">Saldo Atual de Gaveta</span>
-                          <span className="text-3xl font-bold text-emerald-400 font-mono">R$ {saldoFisicoGaveta.toFixed(2)}</span>
-                          <span className="text-[10px] text-zinc-500 block font-sans mt-0.5 font-normal tracking-wide">+ Vendas em Dinheiro</span>
+                          <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-wider block mb-0.5">Saldo Atual de Gaveta</span>
+                          <span className="text-2xl font-bold text-emerald-400 font-mono leading-none">R$ {saldoFisicoGaveta.toFixed(2)}</span>
                         </div>
+                        <Wallet className="text-emerald-500/20 w-8 h-8 ml-2 hidden sm:block" />
                       </div>
 
-                      <div className="flex flex-wrap gap-3">
-                        <button onClick={() => setShowSuprimentoModal(true)} className="px-4 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg font-medium border border-emerald-500/30 transition-colors cursor-pointer text-sm">
-                          + Suprimento
+                      <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+                        <button onClick={() => setShowSuprimentoModal(true)} className="flex-1 lg:flex-none px-3 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg font-medium border border-emerald-500/30 transition-colors cursor-pointer text-sm whitespace-nowrap">
+                          🟢 + Suprimento
                         </button>
-                        <button onClick={() => setShowSangriaModal(true)} className="px-4 py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-lg font-medium border border-rose-500/30 transition-colors cursor-pointer text-sm">
-                          - Sangria
+                        <button onClick={() => setShowSangriaModal(true)} className="flex-1 lg:flex-none px-3 py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-lg font-medium border border-rose-500/30 transition-colors cursor-pointer text-sm whitespace-nowrap">
+                          🔴 - Sangria
                         </button>
-                        <button onClick={() => setShowFecharCaixaModal(true)} className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg font-bold shadow-lg transition-colors cursor-pointer text-sm">
-                          Fechar Caixa
+                        <button onClick={() => setShowFecharCaixaModal(true)} className="flex-1 lg:flex-none px-3 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg font-bold shadow-md transition-colors cursor-pointer text-sm whitespace-nowrap">
+                          🟡 Fechar Caixa
                         </button>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-[#121214] p-4 rounded-xl border border-zinc-800 shadow-sm flex items-center gap-4">
-                        <div className="p-3 bg-zinc-800/50 rounded-lg"><Wallet className="text-zinc-400 w-5 h-5" /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="bg-[#121214] p-3 rounded-xl border border-zinc-800 shadow-sm flex items-center gap-3">
+                        <div className="p-2.5 bg-zinc-800/50 rounded-lg"><Wallet className="text-zinc-400 w-4 h-4" /></div>
                         <div>
-                          <span className="text-zinc-400 text-xs block mb-0.5 font-medium uppercase tracking-wide">Fundo Inicial</span>
-                          <span className="text-lg font-bold text-zinc-100 font-mono">R$ {Number(caixaAtivo.fundo_inicial).toFixed(2)}</span>
+                          <span className="text-zinc-400 text-[10px] block mb-0.5 font-medium uppercase tracking-wide">Fundo Inicial</span>
+                          <span className="text-base font-bold text-zinc-100 font-mono leading-none">R$ {Number(caixaAtivo.fundo_inicial).toFixed(2)}</span>
                         </div>
                       </div>
-                      <div onClick={() => setShowSuprimentoModal(true)} className="bg-[#121214] p-4 rounded-xl border border-zinc-800 hover:border-emerald-500/50 hover:bg-[#161618] transition-colors cursor-pointer shadow-sm flex items-center gap-4 group">
-                         <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors"><ArrowUpCircle className="text-emerald-400 w-5 h-5" /></div>
+                      <div onClick={() => setShowSuprimentoModal(true)} className="bg-[#121214] p-3 rounded-xl border border-zinc-800 hover:border-emerald-500/50 hover:bg-[#161618] transition-colors cursor-pointer shadow-sm flex items-center gap-3 group">
+                         <div className="p-2.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors"><ArrowUpCircle className="text-emerald-400 w-4 h-4" /></div>
                          <div>
-                          <span className="text-zinc-400 text-xs block mb-0.5 font-medium uppercase tracking-wide group-hover:text-emerald-400/80 transition-colors">Entradas (Suprimentos)</span>
-                          <span className="text-lg font-bold text-emerald-400 font-mono">R$ {totalSuprimentosCaixa.toFixed(2)}</span>
+                          <span className="text-zinc-400 text-[10px] block mb-0.5 font-medium uppercase tracking-wide group-hover:text-emerald-400/80 transition-colors">Entradas (Suprimentos)</span>
+                          <span className="text-base font-bold text-emerald-400 font-mono leading-none">R$ {totalSuprimentosCaixa.toFixed(2)}</span>
                          </div>
                       </div>
-                      <div onClick={() => setShowSangriaModal(true)} className="bg-[#121214] p-4 rounded-xl border border-zinc-800 hover:border-rose-500/50 hover:bg-[#161618] transition-colors cursor-pointer shadow-sm flex items-center gap-4 group">
-                        <div className="p-3 bg-rose-500/10 rounded-lg border border-rose-500/20 group-hover:bg-rose-500/20 transition-colors"><ArrowDownCircle className="text-rose-400 w-5 h-5" /></div>
+                      <div onClick={() => setShowSangriaModal(true)} className="bg-[#121214] p-3 rounded-xl border border-zinc-800 hover:border-rose-500/50 hover:bg-[#161618] transition-colors cursor-pointer shadow-sm flex items-center gap-3 group">
+                        <div className="p-2.5 bg-rose-500/10 rounded-lg border border-rose-500/20 group-hover:bg-rose-500/20 transition-colors"><ArrowDownCircle className="text-rose-400 w-4 h-4" /></div>
                         <div>
-                          <span className="text-zinc-400 text-xs block mb-0.5 font-medium uppercase tracking-wide group-hover:text-rose-400/80 transition-colors">Saídas (Sangrias)</span>
-                          <span className="text-lg font-bold text-rose-400 font-mono">R$ {totalSangriasCaixa.toFixed(2)}</span>
+                          <span className="text-zinc-400 text-[10px] block mb-0.5 font-medium uppercase tracking-wide group-hover:text-rose-400/80 transition-colors">Saídas (Sangrias)</span>
+                          <span className="text-base font-bold text-rose-400 font-mono leading-none">R$ {totalSangriasCaixa.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="bg-[#121214] rounded-xl border border-zinc-800 flex-1 flex flex-col overflow-hidden">
-                      <div className="p-4 border-b border-zinc-800 bg-[#1A1A1E]">
-                        <h3 className="font-bold text-zinc-100">Histórico de Movimentações</h3>
+                    <div className="bg-[#121214] rounded-xl border border-zinc-800 flex-1 flex flex-col overflow-hidden shadow-sm">
+                      <div className="px-4 py-3 border-b border-zinc-800 bg-[#1A1A1E]">
+                        <h3 className="font-bold text-zinc-100 text-sm">Histórico de Movimentações</h3>
                       </div>
-                      <div className="p-0 overflow-y-auto flex-1">
-                        <table className="w-full text-sm text-left">
-                          <thead className="bg-[#0A0A0B] text-zinc-400 sticky top-0">
+                      <div className="p-0 overflow-x-auto overflow-y-auto flex-1">
+                        <table className="w-full text-xs text-left min-w-[600px]">
+                          <thead className="bg-[#0A0A0B] text-zinc-400 sticky top-0 z-10">
                             <tr>
-                              <th className="p-3 font-medium">Data/Hora</th>
-                              <th className="p-3 font-medium">Tipo</th>
-                              <th className="p-3 font-medium">Motivo</th>
-                              <th className="p-3 font-medium">Operador</th>
-                              <th className="p-3 font-medium text-right">Valor</th>
+                              <th className="p-2.5 font-medium whitespace-nowrap">Data/Hora</th>
+                              <th className="p-2.5 font-medium whitespace-nowrap">Tipo</th>
+                              <th className="p-2.5 font-medium w-full">Motivo / Observação</th>
+                              <th className="p-2.5 font-medium whitespace-nowrap">Operador</th>
+                              <th className="p-2.5 font-medium text-right whitespace-nowrap">Valor</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-zinc-800/50">
@@ -3773,15 +3773,15 @@ export default function App() {
                             ) : (
                               caixaMovimentacoes.map(m => (
                                 <tr key={m.id} className="hover:bg-[#1A1A1E] transition-colors">
-                                  <td className="p-3 text-zinc-300">{new Date(m.data_hora).toLocaleString()}</td>
-                                  <td className="p-3">
-                                    <span className={`px-2 py-1 rounded text-xs font-bold ${m.tipo === 'Sangria' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                  <td className="p-2.5 text-zinc-400 whitespace-nowrap">{new Date(m.data_hora).toLocaleString()}</td>
+                                  <td className="p-2.5 whitespace-nowrap">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${m.tipo === 'Sangria' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
                                       {m.tipo}
                                     </span>
                                   </td>
-                                  <td className="p-3 text-zinc-300">{m.motivo}</td>
-                                  <td className="p-3 text-zinc-400">{m.operador}</td>
-                                  <td className={`p-3 text-right font-mono font-medium ${m.tipo === 'Sangria' ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                  <td className="p-2.5 text-zinc-300 break-words">{m.motivo}</td>
+                                  <td className="p-2.5 text-zinc-400 whitespace-nowrap">{m.operador}</td>
+                                  <td className={`p-2.5 text-right font-mono font-medium whitespace-nowrap ${m.tipo === 'Sangria' ? 'text-rose-400' : 'text-emerald-400'}`}>
                                     {m.tipo === 'Sangria' ? '-' : '+'} R$ {Number(m.valor).toFixed(2)}
                                   </td>
                                 </tr>
