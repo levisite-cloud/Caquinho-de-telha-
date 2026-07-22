@@ -48,7 +48,8 @@ import {
   ChevronDown,
   ChevronUp,
   LayoutDashboard,
-  Users
+  Users,
+  Menu
 } from 'lucide-react';
 import { MasterAdmin } from './pages/MasterAdmin';
 import { AtivacaoLicenca } from './components/AtivacaoLicenca';
@@ -124,6 +125,7 @@ export default function App() {
   // Controle de Abas
   const [activeTab, setActiveTab] = useState<'pdv' | 'comandas' | 'produtos' | 'relatorios' | 'empresa' | 'impressoras' | 'sincronizacao' | 'nfce' | 'info' | 'caixa'>('pdv');
   const [openMenus, setOpenMenus] = useState<string[]>(['caixa', 'configuracoes']);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMenu = (menuName: string) => {
     setOpenMenus(prev => 
@@ -1394,32 +1396,50 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 flex font-sans overflow-hidden" id="pdv-app-container">
+      {/* OVERLAY MOBILE */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
       {/* SIDEBAR LATERAL */}
-      <aside className="w-64 bg-[#121214] border-r border-zinc-800 flex flex-col shrink-0 hidden md:flex">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#121214] border-r border-zinc-800 flex flex-col shrink-0 transition-transform duration-300 md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
          {/* Logo / Título da Empresa */}
-         <div className="p-4 border-b border-zinc-800 flex items-center gap-3 shrink-0 h-16">
-           <div className="p-1.5 bg-amber-500 rounded-lg text-zinc-950 flex items-center justify-center overflow-hidden w-9 h-9 shrink-0">
-             {empresa.logo ? (
-               <img src={empresa.logo} alt="Logo" referrerPolicy="no-referrer" className="w-full h-full object-cover rounded-md" id="header-empresa-logo" />
-             ) : (
-               <Utensils className="w-5 h-5" />
-             )}
+         <div className="p-4 border-b border-zinc-800 flex items-center justify-between shrink-0 h-16">
+           <div className="flex items-center gap-3">
+             <div className="p-1.5 bg-amber-500 rounded-lg text-zinc-950 flex items-center justify-center overflow-hidden w-9 h-9 shrink-0">
+               {empresa.logo ? (
+                 <img src={empresa.logo} alt="Logo" referrerPolicy="no-referrer" className="w-full h-full object-cover rounded-md" id="header-empresa-logo" />
+               ) : (
+                 <Utensils className="w-5 h-5" />
+               )}
+             </div>
+             <div className="overflow-hidden">
+               <h1 className="text-sm font-bold text-white truncate">
+                 {empresa.nome}
+               </h1>
+               <p className="text-[10px] text-amber-500 font-medium tracking-wider">PDV & BAR</p>
+             </div>
            </div>
-           <div className="overflow-hidden">
-             <h1 className="text-sm font-bold text-white truncate">
-               {empresa.nome}
-             </h1>
-             <p className="text-[10px] text-amber-500 font-medium tracking-wider">PDV & BAR</p>
-           </div>
+           
+           {/* Close button for mobile */}
+           <button 
+             className="md:hidden p-1 text-zinc-400 hover:text-white rounded-md bg-zinc-800/50"
+             onClick={() => setIsMobileMenuOpen(false)}
+           >
+             <X className="w-5 h-5" />
+           </button>
          </div>
          
          <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 custom-scrollbar">
            {/* Root items */}
-           <button onClick={() => setActiveTab('pdv')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'pdv' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
+           <button onClick={() => { setActiveTab('pdv'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'pdv' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
              <LayoutDashboard className="w-4 h-4" /> Dashboard (PDV)
            </button>
            
-           <button onClick={() => { setActiveTab('produtos'); carregarProdutos(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'produtos' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
+           <button onClick={() => { setActiveTab('produtos'); carregarProdutos(); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'produtos' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
              <Package className="w-4 h-4" /> Produtos
            </button>
            
@@ -1427,7 +1447,7 @@ export default function App() {
              <Users className="w-4 h-4" /> Clientes
            </button>
            
-           <button onClick={() => { setActiveTab('comandas'); carregarComandas(); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'comandas' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
+           <button onClick={() => { setActiveTab('comandas'); carregarComandas(); setIsMobileMenuOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'comandas' ? 'bg-amber-500/10 text-amber-500 font-bold' : 'text-zinc-400 hover:bg-[#1E1E22] hover:text-zinc-100'}`}>
              <div className="flex items-center gap-3"><ClipboardList className="w-4 h-4" /> Pedidos</div>
              {comandas.length > 0 && <span className="bg-amber-500 text-zinc-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{comandas.length}</span>}
            </button>
@@ -1440,11 +1460,11 @@ export default function App() {
              </button>
              {openMenus.includes('caixa') && (
                <div className="flex flex-col gap-1 mt-1 border-l border-zinc-800 ml-5 pl-3">
-                 <button onClick={() => setActiveTab('caixa')} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'caixa' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Abertura / Histórico</button>
-                 <button onClick={() => setShowFecharCaixaModal(true)} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Fechamento de Caixa</button>
-                 <button onClick={() => setShowSangriaModal(true)} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Sangria</button>
-                 <button onClick={() => setShowSuprimentoModal(true)} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Suprimento</button>
-                 <button onClick={() => { setActiveTab('relatorios'); carregarRelatorio(); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'relatorios' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Relatórios</button>
+                 <button onClick={() => { setActiveTab('caixa'); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'caixa' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Abertura / Histórico</button>
+                 <button onClick={() => { setShowFecharCaixaModal(true); setIsMobileMenuOpen(false); }} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Fechamento de Caixa</button>
+                 <button onClick={() => { setShowSangriaModal(true); setIsMobileMenuOpen(false); }} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Sangria</button>
+                 <button onClick={() => { setShowSuprimentoModal(true); setIsMobileMenuOpen(false); }} className="text-left px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22] transition-colors cursor-pointer">Suprimento</button>
+                 <button onClick={() => { setActiveTab('relatorios'); carregarRelatorio(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'relatorios' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Relatórios</button>
                </div>
              )}
            </div>
@@ -1461,11 +1481,11 @@ export default function App() {
              </button>
              {openMenus.includes('config') && (
                <div className="flex flex-col gap-1 mt-1 border-l border-zinc-800 ml-5 pl-3">
-                 <button onClick={abrirAbaEmpresa} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'empresa' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Dados da Empresa</button>
-                 <button onClick={abrirAbaImpressoras} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'impressoras' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Impressoras</button>
-                 <button onClick={abrirAbaNfce} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'nfce' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>NFC-e / ACBr</button>
-                 <button onClick={() => setActiveTab('sincronizacao')} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'sincronizacao' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Sincronização</button>
-                 <button onClick={() => { setActiveTab('info'); fetch('/api/system/info').then(res => res.json()).then(setSystemInfo); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'info' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Informações do Sistema</button>
+                 <button onClick={() => { abrirAbaEmpresa(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'empresa' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Dados da Empresa</button>
+                 <button onClick={() => { abrirAbaImpressoras(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'impressoras' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Impressoras</button>
+                 <button onClick={() => { abrirAbaNfce(); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'nfce' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>NFC-e / ACBr</button>
+                 <button onClick={() => { setActiveTab('sincronizacao'); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'sincronizacao' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Sincronização</button>
+                 <button onClick={() => { setActiveTab('info'); fetch('/api/system/info').then(res => res.json()).then(setSystemInfo); setIsMobileMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${activeTab === 'info' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1E1E22]'}`}>Informações do Sistema</button>
                </div>
              )}
            </div>
@@ -1506,7 +1526,13 @@ export default function App() {
 
         {/* HEADER TOP BAR */}
         <header className="bg-[#121214] text-white shadow-md border-b border-zinc-800 h-16 shrink-0 flex items-center px-4 md:px-6 justify-between">
-          <div className="flex items-center gap-4 text-xs text-zinc-400">
+          <div className="flex items-center gap-2 md:gap-4 text-xs text-zinc-400">
+            <button 
+              className="md:hidden p-1.5 -ml-1.5 text-zinc-400 hover:text-white rounded-md bg-zinc-800/50"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             {syncStatus && (
               <div 
                 className="hidden sm:flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" 
