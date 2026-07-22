@@ -3748,13 +3748,6 @@ export default function App() {
         )}
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-[#0A0A0B] text-zinc-500 py-6 border-t border-zinc-800 text-center text-xs mt-auto flex flex-col items-center justify-center gap-1 shrink-0" id="app-footer">
-        <p className="font-bold text-zinc-300 text-sm">ERP Bar e Restaurante</p>
-        <p>Versão {systemInfo?.versao || 'v1.0.0'}</p>
-        <p>Desenvolvido por Levi</p>
-        <p className="text-[10px] mt-2">&copy; {new Date().getFullYear()} - Todos os direitos reservados.</p>
-      </footer>
       </div>
       {/* MODAL SANGRIA / SUPRIMENTO */}
       {(showSangriaModal || showSuprimentoModal) && (
