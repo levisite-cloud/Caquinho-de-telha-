@@ -1471,8 +1471,11 @@ export default function App() {
            </div>
            
          </nav>
-         <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500 text-center">
-            &copy; {new Date().getFullYear()} Levisite
+         <div className="p-4 border-t border-zinc-800 flex flex-col items-center justify-center gap-1">
+            <p className="font-bold text-zinc-300 text-xs text-center">ERP Bar e Restaurante</p>
+            <p className="text-[10px] text-zinc-500">Versão v1.0.0</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Desenvolvido por Levi</p>
+            <p className="text-[9px] text-zinc-600 mt-2 text-center">&copy; 2026 - Todos os direitos reservados.</p>
          </div>
       </aside>
       
