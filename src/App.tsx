@@ -1651,12 +1651,12 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1" id="pdv-grid">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1" id="pdv-grid">
                 
                 {/* COLUNA ESQUERDA: CATÁLOGO DE PRODUTOS */}
-                <div className="lg:col-span-7 flex flex-col gap-4" id="pdv-catalog-col">
+                <div className="lg:col-span-7 flex flex-col gap-3" id="pdv-catalog-col">
                   {/* Busca e Filtros de Categorias */}
-                  <div className="bg-[#121214] p-4 rounded-xl shadow-md border border-zinc-800 flex flex-col gap-3">
+                  <div className="bg-[#121214] p-3 rounded-xl shadow-md border border-zinc-800 flex flex-col gap-2">
                     <div className="relative">
                       <Search className="w-4 h-4 text-amber-500 absolute left-3 top-3" />
                       <input
@@ -1674,7 +1674,7 @@ export default function App() {
                         <button
                           key={cat}
                           onClick={() => setCategoriaAtiva(cat)}
-                          className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                          className={`px-3 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                             categoriaAtiva === cat
                               ? 'bg-amber-500 text-zinc-950 font-bold'
                               : 'bg-[#1E1E22] text-zinc-400 hover:bg-[#25252A] hover:text-zinc-200'
@@ -1707,7 +1707,7 @@ export default function App() {
                           <div
                             key={produto.id}
                             onClick={() => adicionarAoCarrinho(produto)}
-                            className={`bg-[#121214] border hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/[0.03] hover:-translate-y-0.5 rounded-xl p-3.5 flex flex-col justify-between transition-all duration-200 cursor-pointer text-left relative group ${
+                            className={`bg-[#121214] border hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/[0.03] hover:-translate-y-0.5 rounded-xl p-3 flex flex-col justify-between transition-all duration-200 cursor-pointer text-left relative group ${
                               negativo ? 'border-rose-500/50 bg-rose-500/5' : esgotado ? 'opacity-60 border-rose-950/50 bg-rose-950/5' : 'border-zinc-800'
                             }`}
                             id={`produto-card-${produto.id}`}
@@ -1760,21 +1760,20 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* COLUNA DIREITA: OPERADOR DE CAIXA / CARRINHO */}
-                <div className="lg:col-span-5 flex flex-col min-h-[450px] lg:min-h-[550px] lg:h-[calc(100vh-220px)]" id="pdv-cart-col">
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl shadow-md flex flex-col flex-1 overflow-hidden">
-                    
-                    {/* SELETOR DE MODO (BALCÃO VS COMANDA) */}
-                    <div className="bg-[#0A0A0B] p-3 flex flex-col gap-2 border-b border-zinc-800">
-                      <div className="grid grid-cols-2 gap-1 bg-[#1A1A1D] p-1 rounded-lg">
+                {/* COLUNA DIREITA: CARRINHO E FECHAMENTO */}
+                <div className="lg:col-span-5 bg-[#121214] border border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-md" id="pdv-cart-col">
+                  {/* Seletor de Modo: Balcão ou Comanda */}
+                  <div className="bg-[#1A1A1E] p-3 border-b border-zinc-800 z-10 shadow-xs" id="venda-mode-selector">
+                    <div className="flex bg-[#121214] p-1 rounded-lg border border-zinc-800/80 mb-2">
+                      <div className="grid grid-cols-2 w-full gap-1">
                         <button
-                          onClick={() => setModoVenda('direta')}
+                          onClick={() => setModoVenda('balcao')}
                           className={`py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                            modoVenda === 'direta'
+                            modoVenda === 'balcao'
                               ? 'bg-[#121214] text-amber-500 border border-amber-500/15 shadow-sm'
                               : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1E1E22]/50'
                           }`}
-                          id="btn-modo-venda-direta"
+                          id="btn-modo-venda-balcao"
                         >
                           Venda Direta (Balcão)
                         </button>
@@ -1826,8 +1825,8 @@ export default function App() {
                     </div>
 
                     {/* LISTAGEM DOS ITENS NO CARRINHO */}
-                    <div className="flex-1 p-4 overflow-y-auto min-h-0" id="cart-items-container">
-                      <div className="flex justify-between items-center pb-2.5 border-b border-zinc-800 mb-3">
+                    <div className="flex-1 p-3 overflow-y-auto min-h-0" id="cart-items-container">
+                      <div className="flex justify-between items-center pb-2 border-b border-zinc-800 mb-2">
                         <h3 className="font-bold text-zinc-100 text-sm flex items-center gap-1.5">
                           <Receipt className="w-4 h-4 text-amber-500" />
                           Itens do Pedido
@@ -2144,11 +2143,11 @@ export default function App() {
 
             {/* 2. TAB DE CONTROLE DE COMANDAS / MESAS */}
             {activeTab === 'comandas' && (
-              <div className="flex flex-col gap-4 animate-fadeIn" id="comandas-board">
-                <div className="bg-[#121214] p-4 rounded-xl border border-zinc-800 shadow-md flex justify-between items-center">
+              <div className="flex flex-col gap-3 animate-fadeIn" id="comandas-board">
+                <div className="bg-[#121214] p-3 rounded-xl border border-zinc-800 shadow-md flex justify-between items-center">
                   <div>
-                    <h2 className="text-base font-bold text-zinc-100">Quadro de Comandas e Mesas Ativas</h2>
-                    <p className="text-xs text-zinc-400">Acompanhe os pedidos de clientes e realize adicionais gradativos</p>
+                    <h2 className="text-sm font-bold text-zinc-100">Quadro de Comandas e Mesas Ativas</h2>
+                    <p className="text-[11px] text-zinc-400">Acompanhe os pedidos de clientes e realize adicionais gradativos</p>
                   </div>
                   <button
                     onClick={() => setShowNovaComandaModal(true)}
@@ -2175,7 +2174,7 @@ export default function App() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="comandas-cards-grid">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3" id="comandas-cards-grid">
                     {comandas.map((comanda) => {
                       const totalC = comanda.itens.reduce((acc, item) => acc + (item.precoVenda * item.quantidade), 0);
                       const totalQtd = comanda.itens.reduce((acc, item) => acc + item.quantidade, 0);
@@ -2183,27 +2182,27 @@ export default function App() {
                       return (
                         <div
                           key={comanda.id}
-                          className="bg-[#121214] border border-zinc-800 rounded-xl shadow-md overflow-hidden flex flex-col justify-between"
+                          className="bg-[#121214] border border-zinc-800 rounded-xl shadow-md overflow-hidden flex flex-col justify-between hover:border-amber-500/30 transition-colors"
                           id={`comanda-board-card-${comanda.id}`}
                         >
                           {/* Top da comanda */}
-                          <div className="p-4 bg-[#1A1A1D] text-white flex justify-between items-start border-b border-zinc-800/60">
+                          <div className="p-3 bg-[#1A1A1D] text-white flex justify-between items-start border-b border-zinc-800/60">
                             <div>
-                              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                              <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
                                 Mesa / Comanda Ativa
                               </span>
-                              <h3 className="text-base font-extrabold text-zinc-100 mt-1.5 flex items-center gap-1.5">
-                                <User className="w-4 h-4 text-zinc-500" />
+                              <h3 className="text-sm font-extrabold text-zinc-100 mt-1.5 flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-zinc-500" />
                                 {comanda.identificador}
                               </h3>
                             </div>
-                            <span className="text-xs font-mono text-zinc-400">
+                            <span className="text-[11px] font-mono text-zinc-400">
                               🕒 {new Date(comanda.dataAbertura).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
 
                           {/* Itens adicionados */}
-                          <div className="p-4 flex-1 border-b border-zinc-800/60 overflow-y-auto max-h-[160px]">
+                          <div className="p-3 flex-1 border-b border-zinc-800/60 overflow-y-auto max-h-[140px]">
                             <p className="text-xs font-bold text-zinc-400 mb-2">Consumindo:</p>
                             {comanda.itens.length === 0 ? (
                               <p className="text-xs italic text-zinc-500 py-2">Sem itens registrados ainda.</p>
@@ -2224,10 +2223,10 @@ export default function App() {
                           </div>
 
                           {/* Rodapé do card da comanda */}
-                          <div className="p-4 bg-[#161618] flex flex-col gap-3">
+                          <div className="p-3 bg-[#161618] flex flex-col gap-2.5">
                             <div className="flex justify-between items-center">
-                              <span className="text-xs font-semibold text-zinc-400">Parcial ({totalQtd} itens):</span>
-                              <span className="text-base font-extrabold text-amber-400 font-mono">
+                              <span className="text-[11px] font-semibold text-zinc-400">Parcial ({totalQtd} itens):</span>
+                              <span className="text-sm font-extrabold text-amber-400 font-mono">
                                 R$ {totalC.toFixed(2)}
                               </span>
                             </div>
@@ -2276,11 +2275,11 @@ export default function App() {
 
             {/* 3. TAB DE ESTOQUE E PRODUTOS (CRUD COMPLETO) */}
             {activeTab === 'produtos' && (
-              <div className="flex flex-col gap-4 animate-fadeIn" id="produtos-crud-tab">
-                <div className="bg-[#121214] p-4 rounded-xl border border-zinc-800 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex flex-col gap-3 animate-fadeIn" id="produtos-crud-tab">
+                <div className="bg-[#121214] p-3 rounded-xl border border-zinc-800 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
-                    <h2 className="text-base font-bold text-zinc-100">Cadastro de Produtos e Estoque</h2>
-                    <p className="text-xs text-zinc-400">Gerencie o cardápio e controle quais itens têm baixa inteligente de estoque</p>
+                    <h2 className="text-sm font-bold text-zinc-100">Cadastro de Produtos e Estoque</h2>
+                    <p className="text-[11px] text-zinc-400">Gerencie o cardápio e controle quais itens têm baixa inteligente de estoque</p>
                   </div>
                   <button
                     onClick={() => abrirModalProduto()}
@@ -2293,7 +2292,7 @@ export default function App() {
                 </div>
 
                 <div className="bg-[#121214] rounded-xl border border-zinc-800 shadow-md overflow-hidden" id="produtos-list-wrapper">
-                  <div className="p-4 border-b border-zinc-800 bg-[#1A1A1E]">
+                  <div className="p-3 border-b border-zinc-800 bg-[#1A1A1E]">
                     <label className="flex items-center gap-2 cursor-pointer w-max">
                       <input
                         type="checkbox"
@@ -2301,24 +2300,24 @@ export default function App() {
                         onChange={(e) => setFiltroEstoqueNegativo(e.target.checked)}
                         className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-rose-500 focus:ring-rose-500 focus:ring-offset-zinc-900"
                       />
-                      <span className="text-sm font-bold text-rose-500">Filtrar apenas produtos com Estoque Negativo</span>
+                      <span className="text-xs font-bold text-rose-500">Filtrar apenas produtos com Estoque Negativo</span>
                     </label>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse" id="produtos-table">
+                    <table className="w-full text-left border-collapse min-w-[800px]" id="produtos-table">
                       <thead>
-                        <tr className="bg-[#0A0A0B] text-zinc-400 text-xs uppercase tracking-wider border-b border-zinc-800">
-                          <th className="p-3.5 pl-4">Produto</th>
-                          <th className="p-3.5">Categoria</th>
-                          <th className="p-3.5 text-right">Preço de Custo</th>
-                          <th className="p-3.5 text-right">Preço de Venda</th>
-                          <th className="p-3.5 text-center">Lucro Estimado</th>
-                          <th className="p-3.5 text-center">Controle Estoque?</th>
-                          <th className="p-3.5 text-right">Quantidade</th>
-                          <th className="p-3.5 text-center pr-4">Ações</th>
+                        <tr className="bg-[#0A0A0B] text-zinc-400 text-[11px] uppercase tracking-wider border-b border-zinc-800">
+                          <th className="p-2.5 pl-4 whitespace-nowrap">Produto</th>
+                          <th className="p-2.5 whitespace-nowrap">Categoria</th>
+                          <th className="p-2.5 text-right whitespace-nowrap">Preço de Custo</th>
+                          <th className="p-2.5 text-right whitespace-nowrap">Preço de Venda</th>
+                          <th className="p-2.5 text-center whitespace-nowrap">Lucro Estimado</th>
+                          <th className="p-2.5 text-center whitespace-nowrap">Controle Estoque?</th>
+                          <th className="p-2.5 text-right whitespace-nowrap">Quantidade</th>
+                          <th className="p-2.5 text-center pr-4 whitespace-nowrap">Ações</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-800 text-sm">
+                      <tbody className="divide-y divide-zinc-800 text-xs">
                         {produtos.length === 0 ? (
                           <tr>
                             <td colSpan={8} className="p-8 text-center text-zinc-500 bg-[#121214]">
@@ -2336,7 +2335,7 @@ export default function App() {
                             return (
                               <React.Fragment key={p.id}>
                               <tr className={`transition-colors ${isEstoqueNegativo ? 'bg-rose-500/10 hover:bg-rose-500/20' : 'hover:bg-[#1E1E22]/50'}`} id={`row-produto-${p.id}`}>
-                                <td className="p-3.5 pl-4">
+                                <td className="p-2.5 pl-4 whitespace-nowrap">
                                   <div className="flex items-center gap-2">
                                     <span className="font-bold text-zinc-100 block">{p.nome}</span>
                                     {isEstoqueNegativo ? (
@@ -2351,28 +2350,27 @@ export default function App() {
                                       </span>
                                     )}
                                   </div>
-                                  <span className="text-[10px] font-mono text-zinc-500">ID: {p.id}</span>
                                 </td>
-                                <td className="p-3.5 text-zinc-300">
+                                <td className="p-2.5 text-zinc-300 whitespace-nowrap">
                                   <span className="text-xs bg-[#1E1E22] text-zinc-300 px-2 py-1 rounded-md font-medium border border-zinc-800">
                                     {p.categoria}
                                   </span>
                                 </td>
-                                <td className="p-3.5 text-right font-mono text-zinc-400">
+                                <td className="p-2.5 text-right font-mono text-zinc-400 whitespace-nowrap">
                                   R$ {p.precoCusto.toFixed(2)}
                                 </td>
-                                <td className="p-3.5 text-right font-mono font-bold text-amber-400">
+                                <td className="p-2.5 text-right font-mono font-bold text-amber-400 whitespace-nowrap">
                                   R$ {p.precoVenda.toFixed(2)}
                                 </td>
-                                <td className="p-3.5 text-center">
-                                  <span className="text-xs text-emerald-400 font-semibold block">
+                                <td className="p-2.5 text-center whitespace-nowrap">
+                                  <span className="text-[11px] text-emerald-400 font-semibold block">
                                     + R$ {lucro.toFixed(2)}
                                   </span>
                                   <span className="text-[10px] text-zinc-500">
                                     ({margem.toFixed(0)}%)
                                   </span>
                                 </td>
-                                <td className="p-3.5 text-center">
+                                <td className="p-2.5 text-center whitespace-nowrap">
                                   {p.controlarEstoque ? (
                                     <span className="inline-flex items-center gap-0.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
                                       Sim <Check className="w-3 h-3" />
@@ -2383,10 +2381,10 @@ export default function App() {
                                     </span>
                                   )}
                                 </td>
-                                <td className="p-3.5 text-right">
+                                <td className="p-2.5 text-right whitespace-nowrap">
                                   {p.controlarEstoque ? (
                                     <div className="flex flex-col items-end">
-                                      <span className={`font-mono font-bold text-sm ${p.estoque <= 0 ? 'text-rose-400' : p.estoque <= (p.estoqueMinimo ?? 5) ? 'text-amber-500 font-extrabold' : 'text-zinc-200'}`}>
+                                      <span className={`font-mono font-bold text-xs ${p.estoque <= 0 ? 'text-rose-400' : p.estoque <= (p.estoqueMinimo ?? 5) ? 'text-amber-500 font-extrabold' : 'text-zinc-200'}`}>
                                         {p.estoque} un
                                       </span>
                                       <span className="text-[10px] text-zinc-500 font-semibold font-mono">
@@ -2394,12 +2392,12 @@ export default function App() {
                                       </span>
                                     </div>
                                   ) : (
-                                    <span className="text-zinc-500 text-xs italic" title="Estoque ilimitado, pois não controla estoque">
+                                    <span className="text-zinc-500 text-[11px] italic" title="Estoque ilimitado, pois não controla estoque">
                                       Livre ♾️
                                     </span>
                                   )}
                                 </td>
-                                <td className="p-3.5 text-center pr-4">
+                                <td className="p-2.5 text-center pr-4 whitespace-nowrap">
                                   <div className="flex items-center justify-center gap-2">
                                     <button
                                       onClick={() => abrirModalProduto(p)}
@@ -2458,10 +2456,10 @@ export default function App() {
                 {/* Resumo Financeiro Cards */}
                 {relatorio && (
                   <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4" id="metrics-grid">
-                    <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-total-vendas">
+                    <div className="bg-[#121214] border border-zinc-800 p-3 rounded-xl shadow-md flex items-center justify-between" id="metric-total-vendas">
                       <div>
-                        <span className="text-xs font-bold text-zinc-400 uppercase">Faturamento de Hoje</span>
-                        <h3 className="text-2xl font-black text-amber-400 font-mono mt-1">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase">Faturamento de Hoje</span>
+                        <h3 className="text-xl font-black text-amber-400 font-mono mt-0.5">
                           R$ {relatorio.totalGeral.toFixed(2)}
                         </h3>
                       </div>
@@ -2475,13 +2473,13 @@ export default function App() {
                       const qtdEstoqueNegativo = produtos.filter(p => p.controlarEstoque && p.estoque < 0).length;
                       return (
                         <div 
-                          className={`border p-4 rounded-xl shadow-md flex items-center justify-between cursor-pointer transition-colors ${qtdEstoqueNegativo > 0 ? 'bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20' : 'bg-[#121214] border-zinc-800 hover:bg-[#1A1A1E]'}`} 
+                          className={`border p-3 rounded-xl shadow-md flex items-center justify-between cursor-pointer transition-colors ${qtdEstoqueNegativo > 0 ? 'bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20' : 'bg-[#121214] border-zinc-800 hover:bg-[#1A1A1E]'}`} 
                           onClick={() => { setFiltroEstoqueNegativo(true); setActiveTab('produtos'); }}
                           title="Clique para ver os produtos com estoque negativo"
                         >
                           <div>
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase leading-tight block">Estoque<br/>Negativo</span>
-                            <h3 className={`text-2xl font-black font-mono mt-1 ${qtdEstoqueNegativo > 0 ? 'text-rose-400' : 'text-zinc-100'}`}>
+                            <span className="text-[9px] font-bold text-zinc-400 uppercase leading-tight block">Estoque<br/>Negativo</span>
+                            <h3 className={`text-xl font-black font-mono mt-0.5 ${qtdEstoqueNegativo > 0 ? 'text-rose-400' : 'text-zinc-100'}`}>
                               {qtdEstoqueNegativo}
                             </h3>
                           </div>
@@ -2492,10 +2490,10 @@ export default function App() {
                       );
                     })()}
 
-                    <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-qtd-vendas">
+                    <div className="bg-[#121214] border border-zinc-800 p-3 rounded-xl shadow-md flex items-center justify-between" id="metric-qtd-vendas">
                       <div>
-                        <span className="text-xs font-bold text-zinc-400 uppercase">Vendas Realizadas</span>
-                        <h3 className="text-2xl font-black text-zinc-100 font-mono mt-1">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase">Vendas Realizadas</span>
+                        <h3 className="text-xl font-black text-zinc-100 font-mono mt-0.5">
                           {relatorio.quantidadeVendas}
                         </h3>
                       </div>
@@ -2504,10 +2502,10 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="bg-[#121214] border border-zinc-800 p-4 rounded-xl shadow-md flex items-center justify-between" id="metric-ticket-medio">
+                    <div className="bg-[#121214] border border-zinc-800 p-3 rounded-xl shadow-md flex items-center justify-between" id="metric-ticket-medio">
                       <div>
-                        <span className="text-xs font-bold text-zinc-400 uppercase">Ticket Médio</span>
-                        <h3 className="text-2xl font-black text-zinc-100 font-mono mt-1">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase">Ticket Médio</span>
+                        <h3 className="text-xl font-black text-zinc-100 font-mono mt-0.5">
                           R$ {relatorio.quantidadeVendas > 0 ? (relatorio.totalGeral / relatorio.quantidadeVendas).toFixed(2) : '0.00'}
                         </h3>
                       </div>
@@ -2574,8 +2572,8 @@ export default function App() {
                   </div>
 
                   {/* PRODUTOS MAIS VENDIDOS DE HOJE */}
-                  <div className="lg:col-span-4 bg-[#121214] border border-zinc-800 rounded-xl p-4 shadow-md" id="most-sold-box">
-                    <h3 className="font-bold text-zinc-100 text-sm mb-3 border-b border-zinc-800/60 pb-2">
+                  <div className="lg:col-span-4 bg-[#121214] border border-zinc-800 rounded-xl p-3 shadow-md" id="most-sold-box">
+                    <h3 className="font-bold text-zinc-100 text-xs mb-2 border-b border-zinc-800/60 pb-2">
                       Top 5 Produtos Mais Vendidos Hoje
                     </h3>
                     {relatorio && relatorio.maisVendidos && relatorio.maisVendidos.length === 0 ? (
@@ -2604,9 +2602,9 @@ export default function App() {
                   </div>
 
                   {/* HISTÓRICO DE VENDAS DO CAIXA */}
-                  <div className="lg:col-span-4 bg-[#121214] border border-zinc-800 rounded-xl p-4 shadow-md flex flex-col justify-between" id="recent-sales-history">
+                  <div className="lg:col-span-4 bg-[#121214] border border-zinc-800 rounded-xl p-3 shadow-md flex flex-col justify-between" id="recent-sales-history">
                     <div>
-                      <h3 className="font-bold text-zinc-100 text-sm mb-3 border-b border-zinc-800/60 pb-2">
+                      <h3 className="font-bold text-zinc-100 text-xs mb-2 border-b border-zinc-800/60 pb-2">
                         Histórico de Cupons de Hoje
                       </h3>
                       {relatorio && relatorio.vendasDetalhadas && relatorio.vendasDetalhadas.length === 0 ? (
