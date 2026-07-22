@@ -2673,83 +2673,83 @@ export default function App() {
 
             {/* 5. TAB DE CONFIGURAÇÕES DA EMPRESA */}
             {activeTab === 'empresa' && (
-              <div className="flex flex-col lg:flex-row gap-6 animate-fadeIn" id="empresa-tab-container">
+              <div className="flex flex-col lg:flex-row gap-4 animate-fadeIn" id="empresa-tab-container">
                 {/* Form de Cadastro */}
-                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-xl p-6 shadow-md" id="empresa-form-card">
-                  <div className="flex items-center gap-2.5 mb-6 border-b border-zinc-800/60 pb-3">
-                    <Store className="w-5 h-5 text-amber-400" />
+                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-lg p-4 shadow-sm" id="empresa-form-card">
+                  <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-2">
+                    <Store className="w-4 h-4 text-amber-400" />
                     <div>
-                      <h3 className="font-bold text-zinc-100 text-base">Cadastro do Estabelecimento</h3>
-                      <p className="text-xs text-zinc-400">Configure as informações que serão impressas nos cupons de venda e comandas.</p>
+                      <h3 className="font-bold text-zinc-100 text-sm">Cadastro do Estabelecimento</h3>
+                      <p className="text-[11px] text-zinc-400">Configure as informações que serão impressas nos cupons.</p>
                     </div>
                   </div>
 
-                  <form onSubmit={salvarEmpresaForm} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <form onSubmit={salvarEmpresaForm} className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">Nome do Estabelecimento *</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Nome do Estabelecimento *</label>
                         <input
                           type="text"
                           value={empresaFormNome}
                           onChange={(e) => setEmpresaFormNome(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="Ex: Pizzaria Bella Italia"
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">CNPJ / CPF</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">CNPJ / CPF</label>
                         <input
                           type="text"
                           value={empresaFormCnpj}
                           onChange={(e) => setEmpresaFormCnpj(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="Ex: 12.345.678/0001-99"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">Endereço Completo</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Endereço Completo</label>
                         <input
                           type="text"
                           value={empresaFormEndereco}
                           onChange={(e) => setEmpresaFormEndereco(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="Ex: Rua das Flores, 123 - Centro"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">Telefone / WhatsApp</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Telefone / WhatsApp</label>
                         <input
                           type="text"
                           value={empresaFormTelefone}
                           onChange={(e) => setEmpresaFormTelefone(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="Ex: (11) 98765-4321"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">Slogan ou Website (Mensagem de Rodapé)</label>
+                      <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Slogan ou Website (Mensagem de Rodapé)</label>
                       <input
                         type="text"
                         value={empresaFormSlogan}
                         onChange={(e) => setEmpresaFormSlogan(e.target.value)}
-                        className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                        className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                         placeholder="Ex: O melhor sabor da culinária brasileira"
                       />
                     </div>
 
-                    <div className="flex items-center justify-between bg-[#1E1E22]/50 border border-zinc-800 rounded-xl p-4">
+                    <div className="flex items-center justify-between bg-[#1A1A1E] border border-zinc-800 rounded-lg p-3">
                       <div>
-                        <h4 className="text-sm font-bold text-zinc-100">Permitir Vendas com Estoque Negativo</h4>
-                        <p className="text-[11px] text-zinc-400 mt-0.5">
-                          Se ativado, as vendas continuarão e o estoque ficará negativo. Se desativado, o sistema bloqueará a venda se não houver estoque.
+                        <h4 className="text-xs font-bold text-zinc-100">Permitir Vendas com Estoque Negativo</h4>
+                        <p className="text-[10px] text-zinc-500 mt-0.5">
+                          Se ativado, as vendas continuarão e o estoque ficará negativo.
                         </p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -2759,13 +2759,13 @@ export default function App() {
                           checked={empresaFormPermitirEstoqueNegativo}
                           onChange={(e) => setEmpresaFormPermitirEstoqueNegativo(e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
                       </label>
                     </div>
 
                     {/* Logo upload block */}
-                    <div className="border border-zinc-800 rounded-xl p-4 bg-[#1E1E22]/50">
-                      <label className="block text-xs font-bold text-zinc-300 mb-2 uppercase">Logomarca do Estabelecimento</label>
+                    <div className="border border-zinc-800 rounded-lg p-3 bg-[#1A1A1E]">
+                      <label className="block text-[10px] font-bold text-zinc-300 mb-2 uppercase tracking-wide">Logomarca do Estabelecimento</label>
                       
                       <div className="flex flex-col sm:flex-row items-center gap-4">
                         <div className="w-20 h-20 bg-[#1E1E22] border border-zinc-800 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
@@ -2825,19 +2825,19 @@ export default function App() {
                     </div>
 
                     {/* PIX Configuration Block */}
-                    <div className="mt-8 border-t border-zinc-800 pt-6">
-                      <div className="flex items-center gap-2 mb-4">
-                        <QrCode className="w-5 h-5 text-emerald-400" />
+                    <div className="mt-4 border-t border-zinc-800 pt-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <QrCode className="w-4 h-4 text-emerald-400" />
                         <h4 className="font-bold text-zinc-200 text-sm">Configuração de Pagamento PIX</h4>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#1E1E22]/30 p-4 rounded-xl border border-zinc-800/80">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-[#1A1A1E] p-3 rounded-lg border border-zinc-800/80">
                         <div>
-                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase">Tipo de Chave PIX</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Tipo de Chave PIX</label>
                           <select
                             value={empresaFormPixTipo}
                             onChange={(e) => setEmpresaFormPixTipo(e.target.value as any)}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500/80 focus:bg-[#1E1E22] transition-colors cursor-pointer"
                           >
                             <option value="CPF">CPF</option>
                             <option value="CNPJ">CNPJ</option>
@@ -2848,34 +2848,34 @@ export default function App() {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase">Chave PIX</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Chave PIX</label>
                           <input
                             type="text"
                             value={empresaFormPixChave}
                             onChange={(e) => setEmpresaFormPixChave(e.target.value)}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500/80 focus:bg-[#1E1E22] transition-colors"
                             placeholder="Ex: 123.456.789-00"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase">Nome do Recebedor (Titular)</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Nome do Recebedor (Titular)</label>
                           <input
                             type="text"
                             value={empresaFormPixNome}
                             onChange={(e) => setEmpresaFormPixNome(e.target.value)}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500/80 focus:bg-[#1E1E22] transition-colors"
                             placeholder="Ex: Joao Silva"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase">Cidade do Recebedor</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Cidade do Recebedor</label>
                           <input
                             type="text"
                             value={empresaFormPixCidade}
                             onChange={(e) => setEmpresaFormPixCidade(e.target.value)}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500/80 focus:bg-[#1E1E22] transition-colors"
                             placeholder="Ex: Sao Paulo"
                           />
                         </div>
@@ -2888,9 +2888,9 @@ export default function App() {
                     <div className="flex justify-end pt-2">
                       <button
                         type="submit"
-                        className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-5 py-2.5 rounded-lg font-bold text-sm cursor-pointer shadow-md transition-colors"
+                        className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-4 py-2 rounded-md font-bold text-xs cursor-pointer shadow-sm transition-colors"
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3.5 h-3.5" />
                         Salvar Alterações
                       </button>
                     </div>
@@ -2971,44 +2971,44 @@ export default function App() {
 
             {/* 6. TAB DE CONFIGURAÇÕES DE IMPRESSORAS */}
             {activeTab === 'impressoras' && (
-              <div className="flex flex-col lg:flex-row gap-6 animate-fadeIn" id="impressoras-tab-container">
+              <div className="flex flex-col lg:flex-row gap-4 animate-fadeIn" id="impressoras-tab-container">
                 {/* Form de Cadastro */}
-                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-xl p-6 shadow-md" id="impressoras-form-card">
-                  <div className="flex items-center gap-2.5 mb-6 border-b border-zinc-800/60 pb-3">
-                    <Printer className="w-5 h-5 text-amber-400" />
+                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-lg p-4 shadow-sm" id="impressoras-form-card">
+                  <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-2">
+                    <Printer className="w-4 h-4 text-amber-400" />
                     <div>
-                      <h3 className="font-bold text-zinc-100 text-base">Impressoras Térmicas</h3>
-                      <p className="text-xs text-zinc-400">Configure as impressoras térmicas ESC/POS do estabelecimento para cozinha e caixa.</p>
+                      <h3 className="font-bold text-zinc-100 text-sm">Impressoras Térmicas</h3>
+                      <p className="text-[11px] text-zinc-400">Configure as impressoras térmicas ESC/POS do estabelecimento para cozinha e caixa.</p>
                     </div>
                   </div>
 
-                  <form onSubmit={salvarPrinterConfigForm} className="space-y-4">
+                  <form onSubmit={salvarPrinterConfigForm} className="space-y-3">
                     
                     {/* Impressora da Cozinha */}
-                    <div className="border border-zinc-800 rounded-xl p-4 bg-[#1E1E22]/30 space-y-3">
+                    <div className="border border-zinc-800/80 rounded-lg p-3 bg-[#1A1A1E] space-y-2">
                       <div className="flex items-center gap-2 text-zinc-200 border-b border-zinc-800 pb-1.5">
-                        <Utensils className="w-4 h-4 text-amber-500" />
-                        <h4 className="text-xs font-bold uppercase tracking-wide">Impressora de Preparo (Cozinha)</h4>
+                        <Utensils className="w-3.5 h-3.5 text-amber-500" />
+                        <h4 className="text-[11px] font-bold uppercase tracking-wide">Impressora de Preparo (Cozinha)</h4>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div className="md:col-span-2">
-                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Endereço IP / Hostname</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Endereço IP / Hostname</label>
                           <input
                             type="text"
                             value={printerFormCozinhaIp}
                             onChange={(e) => setPrinterFormCozinhaIp(e.target.value)}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                             placeholder="Ex: 192.168.1.100"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Porta TCP</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Porta TCP</label>
                           <input
                             type="number"
                             value={printerFormCozinhaPorta}
                             onChange={(e) => setPrinterFormCozinhaPorta(Number(e.target.value))}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                             placeholder="Ex: 9100"
                             required
                           />
@@ -3017,30 +3017,30 @@ export default function App() {
                     </div>
 
                     {/* Impressora do Caixa */}
-                    <div className="border border-zinc-800 rounded-xl p-4 bg-[#1E1E22]/30 space-y-3">
+                    <div className="border border-zinc-800/80 rounded-lg p-3 bg-[#1A1A1E] space-y-2">
                       <div className="flex items-center gap-2 text-zinc-200 border-b border-zinc-800 pb-1.5">
-                        <DollarSign className="w-4 h-4 text-emerald-400" />
-                        <h4 className="text-xs font-bold uppercase tracking-wide">Impressora do Caixa (Cupons)</h4>
+                        <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                        <h4 className="text-[11px] font-bold uppercase tracking-wide">Impressora do Caixa (Cupons)</h4>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div className="md:col-span-2">
-                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Endereço IP / Hostname</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Endereço IP / Hostname</label>
                           <input
                             type="text"
                             value={printerFormCaixaIp}
                             onChange={(e) => setPrinterFormCaixaIp(e.target.value)}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                             placeholder="Ex: 192.168.1.200"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Porta TCP</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Porta TCP</label>
                           <input
                             type="number"
                             value={printerFormCaixaPorta}
                             onChange={(e) => setPrinterFormCaixaPorta(Number(e.target.value))}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                             placeholder="Ex: 9100"
                             required
                           />
@@ -3049,12 +3049,12 @@ export default function App() {
                     </div>
 
                     {/* API de Impressão Remota */}
-                    <div className="border border-zinc-800 rounded-xl p-4 bg-[#1E1E22]/50 space-y-4">
+                    <div className="border border-zinc-800/80 rounded-lg p-3 bg-[#1A1A1E] space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Cloud className="w-4 h-4 text-sky-400" />
                           <div>
-                            <h4 className="text-xs font-bold uppercase tracking-wide text-zinc-200">API de Impressão Remota</h4>
+                            <h4 className="text-[11px] font-bold uppercase tracking-wide text-zinc-200">API de Impressão Remota</h4>
                             <p className="text-[10px] text-zinc-500">Encaminhar payloads de impressão diretamente para um servidor/ponte local.</p>
                           </div>
                         </div>
@@ -3072,40 +3072,40 @@ export default function App() {
 
                       {printerFormUsarApiRemota && (
                         <div className="space-y-3 pt-2 border-t border-zinc-800 animate-slideDown">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                              <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">URL do Endereço API Remota</label>
+                              <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">URL do Endereço API Remota</label>
                               <input
                                 type="url"
                                 value={printerFormApiUrl}
                                 onChange={(e) => setPrinterFormApiUrl(e.target.value)}
-                                className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                                className="w-full bg-[#1E1E22] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 transition-colors"
                                 placeholder="Ex: https://meuservidor.com/api/print"
                                 required={printerFormUsarApiRemota}
                               />
                             </div>
                             <div>
-                              <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Token / Chave de API (Opcional)</label>
+                              <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Token / Chave de API (Opcional)</label>
                               <input
                                 type="password"
                                 value={printerFormApiToken}
                                 onChange={(e) => setPrinterFormApiToken(e.target.value)}
-                                className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                                className="w-full bg-[#1E1E22] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 transition-colors"
                                 placeholder="Ex: Bearer Token de Acesso"
                               />
                             </div>
                           </div>
 
                           <div>
-                            <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Formato do Payload / Protocolo</label>
+                            <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Formato do Payload / Protocolo</label>
                             <select
                               value={printerFormTipoImpressora}
                               onChange={(e) => setPrinterFormTipoImpressora(e.target.value as any)}
-                              className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors cursor-pointer"
+                              className="w-full bg-[#1E1E22] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 transition-colors cursor-pointer"
                             >
-                              <option value="escpos">ESC/POS (Instruções binárias completas para impressoras térmicas)</option>
-                              <option value="raw">Raw Plain Text (Texto corrido com separadores de papel tracejados)</option>
-                              <option value="json">JSON Estruturado (Envio de metadados completos do pedido e itens)</option>
+                              <option value="escpos">ESC/POS (Instruções binárias completas para térmicas)</option>
+                              <option value="raw">Raw Plain Text (Texto corrido com separadores)</option>
+                              <option value="json">JSON Estruturado (Metadados completos)</option>
                             </select>
                           </div>
                         </div>
@@ -3115,9 +3115,9 @@ export default function App() {
                     <div className="flex justify-end pt-2">
                       <button
                         type="submit"
-                        className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-5 py-2.5 rounded-lg font-bold text-sm cursor-pointer shadow-md transition-colors"
+                        className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-4 py-2 rounded-md font-bold text-xs cursor-pointer shadow-sm transition-colors"
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3.5 h-3.5" />
                         Salvar Configurações
                       </button>
                     </div>
@@ -3125,9 +3125,9 @@ export default function App() {
                 </div>
 
                 {/* Painel de Explicações Técnicas */}
-                <div className="w-full lg:w-[380px] bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-4" id="impressoras-info-panel">
-                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800/60 pb-2">
-                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                <div className="w-full lg:w-[320px] bg-[#121214] border border-zinc-800 rounded-lg p-4 flex flex-col gap-3 shadow-sm" id="impressoras-info-panel">
+                  <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800/60 pb-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                     <span>Como funciona a Impressão?</span>
                   </div>
 
@@ -3202,106 +3202,106 @@ export default function App() {
 
             {/* 7. TAB DE CONFIGURAÇÕES FISCAIS (NFC-e) */}
             {activeTab === 'nfce' && (
-              <div className="flex flex-col lg:flex-row gap-6 animate-fadeIn" id="nfce-tab-container">
-                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-xl p-6 shadow-md" id="nfce-form-card">
-                  <div className="flex items-center gap-2.5 mb-6 border-b border-zinc-800/60 pb-3">
-                    <FileText className="w-5 h-5 text-amber-400" />
+              <div className="flex flex-col lg:flex-row gap-4 animate-fadeIn" id="nfce-tab-container">
+                <div className="flex-1 bg-[#121214] border border-zinc-800 rounded-lg p-4 shadow-sm" id="nfce-form-card">
+                  <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-2">
+                    <FileText className="w-4 h-4 text-amber-400" />
                     <div>
-                      <h3 className="font-bold text-zinc-100 text-base">Integração Fiscal NFC-e (ACBr)</h3>
-                      <p className="text-xs text-zinc-400">Configure as credenciais e o certificado para emissão do Cupom Fiscal Eletrônico.</p>
+                      <h3 className="font-bold text-zinc-100 text-sm">Integração Fiscal NFC-e (ACBr)</h3>
+                      <p className="text-[11px] text-zinc-400">Configure as credenciais e o certificado para emissão do Cupom Fiscal Eletrônico.</p>
                     </div>
                   </div>
 
-                  <form onSubmit={salvarEmpresaForm} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <form onSubmit={salvarEmpresaForm} className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Ambiente Sefaz</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Ambiente Sefaz</label>
                         <select
                           value={empresaFormNfceAmbiente}
                           onChange={(e) => setEmpresaFormNfceAmbiente(e.target.value as any)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors cursor-pointer"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors cursor-pointer"
                         >
                           <option value="homologacao">Homologação (Testes)</option>
                           <option value="producao">Produção (Validade Jurídica)</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Estado (UF)</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Estado (UF)</label>
                         <input
                           type="text"
                           maxLength={2}
                           value={empresaFormNfceUf}
                           onChange={(e) => setEmpresaFormNfceUf(e.target.value.toUpperCase())}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors uppercase"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors uppercase"
                           placeholder="Ex: SP"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">CNPJ Emissor</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">CNPJ Emissor</label>
                         <input
                           type="text"
                           value={empresaFormNfceCnpj}
                           onChange={(e) => setEmpresaFormNfceCnpj(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="00.000.000/0001-00"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Inscrição Estadual</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Inscrição Estadual</label>
                         <input
                           type="text"
                           value={empresaFormNfceIe}
                           onChange={(e) => setEmpresaFormNfceIe(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="Número IE"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Código de Segurança (CSC)</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Código de Segurança (CSC)</label>
                         <input
                           type="text"
                           value={empresaFormNfceCsc}
                           onChange={(e) => setEmpresaFormNfceCsc(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="Código Alfanumérico"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">ID do CSC</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">ID do CSC</label>
                         <input
                           type="text"
                           value={empresaFormNfceIdCsc}
                           onChange={(e) => setEmpresaFormNfceIdCsc(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="Ex: 000001"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-4 pt-4 border-t border-zinc-800/80">
+                    <div className="space-y-3 pt-3 border-t border-zinc-800/80">
                       <div>
-                        <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">URL Servidor ACBr (REST)</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">URL Servidor ACBr (REST)</label>
                         <input
                           type="url"
                           value={empresaFormNfceApiUrl}
                           onChange={(e) => setEmpresaFormNfceApiUrl(e.target.value)}
-                          className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                           placeholder="Ex: http://localhost:8080"
                         />
                         <p className="text-[10px] text-zinc-500 mt-1">Endereço onde o ACBrMonitorPLUS ou API ACBr está escutando.</p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Certificado A1 (.pfx / .p12)</label>
-                          <label className="flex items-center justify-center gap-2 w-full bg-[#1E1E22] border border-dashed border-zinc-700 hover:border-amber-500 rounded-lg px-3 py-2.5 text-sm text-zinc-400 cursor-pointer transition-colors">
-                            <Upload className="w-4 h-4" />
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Certificado A1 (.pfx / .p12)</label>
+                          <label className="flex items-center justify-center gap-2 w-full bg-[#1A1A1E] border border-dashed border-zinc-700/80 hover:border-amber-500/80 rounded-md px-3 py-1.5 text-xs text-zinc-400 cursor-pointer transition-colors">
+                            <Upload className="w-3.5 h-3.5" />
                             {empresaFormNfceCertificadoBase64 ? 'Certificado Carregado' : 'Procurar Certificado'}
                             <input
                               type="file"
@@ -3312,33 +3312,33 @@ export default function App() {
                           </label>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Senha do Certificado</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wide">Senha do Certificado</label>
                           <input
                             type="password"
                             value={empresaFormNfceCertificadoSenha}
                             onChange={(e) => setEmpresaFormNfceCertificadoSenha(e.target.value)}
-                            className="w-full bg-[#1E1E22] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full bg-[#1A1A1E] border border-zinc-700/50 rounded-md px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-500/80 focus:bg-[#1E1E22] transition-colors"
                             placeholder="Senha do PFX"
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-end pt-4 mt-4 border-t border-zinc-800/80">
+                    <div className="flex justify-end pt-3 mt-3 border-t border-zinc-800/80">
                       <button
                         type="submit"
-                        className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-5 py-2.5 rounded-lg font-bold text-sm cursor-pointer shadow-md transition-colors"
+                        className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-4 py-2 rounded-md font-bold text-xs cursor-pointer shadow-sm transition-colors"
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3.5 h-3.5" />
                         Salvar Configurações Fiscais
                       </button>
                     </div>
                   </form>
                 </div>
 
-                <div className="w-full lg:w-[380px] bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-4">
-                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800/60 pb-2">
-                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                <div className="w-full lg:w-[320px] bg-[#121214] border border-zinc-800 rounded-lg p-4 flex flex-col gap-3 shadow-sm">
+                  <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800/60 pb-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                     <span>Emissão de NFC-e</span>
                   </div>
 
@@ -3358,31 +3358,31 @@ export default function App() {
               </div>
             )}
             {activeTab === 'sincronizacao' && (
-              <div className="max-w-5xl mx-auto space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#121214] p-6 rounded-xl border border-zinc-800">
+              <div className="max-w-5xl mx-auto space-y-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-[#121214] p-4 rounded-lg border border-zinc-800 shadow-sm">
                   <div>
-                    <h2 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-                      <RefreshCw className="w-6 h-6 text-amber-500" />
+                    <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
+                      <RefreshCw className="w-5 h-5 text-amber-500" />
                       Sincronização Global
                     </h2>
-                    <p className="text-sm text-zinc-400 mt-1">
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
                       Monitore e force a sincronização da infraestrutura em tempo real.
                     </p>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={handleVerLogs}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#1E1E22] hover:bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg font-medium text-sm transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1A1E] hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 rounded-md font-medium text-xs transition-colors cursor-pointer"
                     >
-                      <ClipboardList className="w-4 h-4" />
+                      <ClipboardList className="w-3.5 h-3.5" />
                       Ver Logs
                     </button>
                     <button
                       onClick={handleForceSync}
                       disabled={isSyncing}
-                      className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg font-bold text-sm shadow-md transition-colors cursor-pointer disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-md font-bold text-xs shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                       Forçar Sincronização
                     </button>
                   </div>
@@ -3402,23 +3402,23 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Supabase Card */}
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
+                  <div className="bg-[#121214] border border-zinc-800 rounded-lg p-4 flex flex-col gap-2 relative overflow-hidden group hover:border-emerald-500/30 transition-colors shadow-sm">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
-                        <Database className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-zinc-100">Banco de Dados (Supabase)</span>
+                        <Database className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100 text-[13px]">Banco de Dados (Supabase)</span>
                       </div>
                       {syncStatus?.supabase === 'Sincronizado' ? (
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
                       ) : syncStatus?.supabase === 'Sincronizando' ? (
-                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                        <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
                       ) : (
-                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                        <AlertCircle className="w-4 h-4 text-rose-400" />
                       )}
                     </div>
-                    <p className="text-xs text-zinc-400 mt-1">Sincronização de vendas, produtos, usuários e políticas de segurança RLS.</p>
+                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">Sincronização de vendas, produtos, usuários e políticas de segurança RLS.</p>
                     <div className="mt-auto pt-3 border-t border-zinc-800/60">
                       <span className={`text-[10px] font-bold uppercase ${
                         syncStatus?.supabase === 'Sincronizado' ? 'text-emerald-400' : 
@@ -3430,21 +3430,21 @@ export default function App() {
                   </div>
                   
                   {/* GitHub Card */}
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-zinc-500/50 transition-colors">
+                  <div className="bg-[#121214] border border-zinc-800 rounded-lg p-4 flex flex-col gap-2 relative overflow-hidden group hover:border-zinc-500/50 transition-colors shadow-sm">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
-                        <Github className="w-5 h-5 text-zinc-100 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-zinc-100">GitHub (Código-Fonte)</span>
+                        <Github className="w-4 h-4 text-zinc-100 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100 text-[13px]">GitHub (Código-Fonte)</span>
                       </div>
                       {syncStatus?.github === 'Sincronizado' ? (
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
                       ) : syncStatus?.github === 'Sincronizando' ? (
-                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                        <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
                       ) : (
-                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                        <AlertCircle className="w-4 h-4 text-rose-400" />
                       )}
                     </div>
-                    <p className="text-xs text-zinc-400 mt-1">Versionamento da branch principal e garantia de ausência de conflitos de merge.</p>
+                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">Versionamento da branch principal e garantia de ausência de conflitos de merge.</p>
                     <div className="mt-auto pt-3 border-t border-zinc-800/60">
                       <span className={`text-[10px] font-bold uppercase ${
                         syncStatus?.github === 'Sincronizado' ? 'text-emerald-400' : 
@@ -3456,21 +3456,21 @@ export default function App() {
                   </div>
 
                   {/* Vercel Card */}
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-zinc-300/30 transition-colors">
+                  <div className="bg-[#121214] border border-zinc-800 rounded-lg p-4 flex flex-col gap-2 relative overflow-hidden group hover:border-zinc-300/30 transition-colors shadow-sm">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-zinc-100 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-zinc-100">Hospedagem (Vercel)</span>
+                        <Globe className="w-4 h-4 text-zinc-100 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100 text-[13px]">Hospedagem (Vercel)</span>
                       </div>
                       {syncStatus?.vercel === 'Sincronizado' ? (
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
                       ) : syncStatus?.vercel === 'Sincronizando' ? (
-                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                        <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
                       ) : (
-                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                        <AlertCircle className="w-4 h-4 text-rose-400" />
                       )}
                     </div>
-                    <p className="text-xs text-zinc-400 mt-1">Servidores edge, funções serverless (APIs) e invalidação de cache global (CDN).</p>
+                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">Servidores edge, funções serverless (APIs) e invalidação de cache global (CDN).</p>
                     <div className="mt-auto pt-3 border-t border-zinc-800/60">
                       <span className={`text-[10px] font-bold uppercase ${
                         syncStatus?.vercel === 'Sincronizado' ? 'text-emerald-400' : 
@@ -3482,21 +3482,21 @@ export default function App() {
                   </div>
 
                   {/* APIs Card */}
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
+                  <div className="bg-[#121214] border border-zinc-800 rounded-lg p-4 flex flex-col gap-2 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-sm">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
-                        <Server className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-zinc-100">APIs Integradas</span>
+                        <Server className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100 text-[13px]">APIs Integradas</span>
                       </div>
                       {syncStatus?.apis === 'Sincronizado' ? (
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
                       ) : syncStatus?.apis === 'Sincronizando' ? (
-                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                        <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
                       ) : (
-                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                        <AlertCircle className="w-4 h-4 text-rose-400" />
                       )}
                     </div>
-                    <p className="text-xs text-zinc-400 mt-1">Testes de comunicação (ping) entre o Frontend (React), Backend (Express) e serviços externos.</p>
+                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">Testes de comunicação (ping) entre o Frontend (React), Backend (Express) e serviços externos.</p>
                     <div className="mt-auto pt-3 border-t border-zinc-800/60">
                       <span className={`text-[10px] font-bold uppercase ${
                         syncStatus?.apis === 'Sincronizado' ? 'text-emerald-400' : 
@@ -3508,21 +3508,21 @@ export default function App() {
                   </div>
 
                   {/* Storage Card */}
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
+                  <div className="bg-[#121214] border border-zinc-800 rounded-lg p-4 flex flex-col gap-2 relative overflow-hidden group hover:border-indigo-500/30 transition-colors shadow-sm">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
-                        <Folder className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-zinc-100">Armazenamento</span>
+                        <Folder className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-zinc-100 text-[13px]">Armazenamento</span>
                       </div>
                       {syncStatus?.storage === 'Sincronizado' ? (
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
                       ) : syncStatus?.storage === 'Sincronizando' ? (
-                        <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                        <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
                       ) : (
-                        <AlertCircle className="w-5 h-5 text-rose-400" />
+                        <AlertCircle className="w-4 h-4 text-rose-400" />
                       )}
                     </div>
-                    <p className="text-xs text-zinc-400 mt-1">Sincronização de mídias, logotipos, comprovantes em PDF e certificados digitais armazenados.</p>
+                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">Sincronização de mídias, logotipos, comprovantes em PDF e certificados digitais armazenados.</p>
                     <div className="mt-auto pt-3 border-t border-zinc-800/60">
                       <span className={`text-[10px] font-bold uppercase ${
                         syncStatus?.storage === 'Sincronizado' ? 'text-emerald-400' : 
@@ -3543,25 +3543,25 @@ export default function App() {
             )}
             
             {activeTab === 'info' && (
-              <div className="max-w-5xl mx-auto space-y-6">
-                <div className="bg-[#121214] p-6 rounded-xl border border-zinc-800">
-                  <h2 className="text-2xl font-bold text-zinc-100 flex items-center gap-2 mb-2">
-                    <Info className="w-6 h-6 text-amber-500" />
+              <div className="max-w-5xl mx-auto space-y-4">
+                <div className="bg-[#121214] p-4 rounded-lg border border-zinc-800 shadow-sm">
+                  <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2 mb-1">
+                    <Info className="w-5 h-5 text-amber-500" />
                     Informações do Sistema
                   </h2>
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-[11px] text-zinc-400">
                     Visão geral corporativa, infraestrutura, autoria e estatísticas em tempo real.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Card 1: Informações do Sistema */}
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 shadow-lg">
-                    <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-3">
-                      <Server className="w-5 h-5 text-amber-400" />
-                      <h3 className="font-bold text-zinc-100">Sobre o Sistema</h3>
+                  <div className="bg-[#121214] border border-zinc-800 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3 border-b border-zinc-800/60 pb-2">
+                      <Server className="w-4 h-4 text-amber-400" />
+                      <h3 className="font-bold text-zinc-100 text-sm">Sobre o Sistema</h3>
                     </div>
-                    <div className="space-y-3 text-sm">
+                    <div className="space-y-2 text-xs">
                       <div className="flex justify-between"><span className="text-zinc-500">Nome:</span> <span className="font-medium text-zinc-200">ERP Bar e Restaurante</span></div>
                       <div className="flex justify-between"><span className="text-zinc-500">Versão Atual:</span> <span className="font-mono text-emerald-400">{systemInfo?.versao || 'Carregando...'}</span></div>
                       <div className="flex justify-between"><span className="text-zinc-500">Build:</span> <span className="font-mono text-zinc-300">{systemInfo?.build || '---'}</span></div>
@@ -3572,12 +3572,12 @@ export default function App() {
                   </div>
 
                   {/* Card 2: Infraestrutura */}
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 shadow-lg">
-                    <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-3">
-                      <Database className="w-5 h-5 text-emerald-400" />
-                      <h3 className="font-bold text-zinc-100">Infraestrutura</h3>
+                  <div className="bg-[#121214] border border-zinc-800 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3 border-b border-zinc-800/60 pb-2">
+                      <Database className="w-4 h-4 text-emerald-400" />
+                      <h3 className="font-bold text-zinc-100 text-sm">Infraestrutura</h3>
                     </div>
-                    <div className="space-y-3 text-sm">
+                    <div className="space-y-2 text-xs">
                       <div className="flex justify-between"><span className="text-zinc-500">Banco de Dados:</span> <span className="font-medium text-zinc-200">Supabase (PostgreSQL)</span></div>
                       <div className="flex justify-between"><span className="text-zinc-500">Frontend:</span> <span className="font-medium text-zinc-200">React + TypeScript</span></div>
                       <div className="flex justify-between"><span className="text-zinc-500">Backend:</span> <span className="font-medium text-zinc-200">Supabase + Edge Functions</span></div>
@@ -3587,12 +3587,12 @@ export default function App() {
                   </div>
 
                   {/* Card 3: Desenvolvedor */}
-                  <div className="bg-[#121214] border border-zinc-800 rounded-xl p-5 shadow-lg">
-                    <div className="flex items-center gap-2 mb-4 border-b border-zinc-800/60 pb-3">
-                      <User className="w-5 h-5 text-indigo-400" />
-                      <h3 className="font-bold text-zinc-100">Desenvolvedor</h3>
+                  <div className="bg-[#121214] border border-zinc-800 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3 border-b border-zinc-800/60 pb-2">
+                      <User className="w-4 h-4 text-indigo-400" />
+                      <h3 className="font-bold text-zinc-100 text-sm">Desenvolvedor</h3>
                     </div>
-                    <div className="space-y-3 text-sm">
+                    <div className="space-y-2 text-xs">
                       <div className="flex justify-between"><span className="text-zinc-500">Nome:</span> <span className="font-medium text-zinc-200">Levi</span></div>
                       <div className="flex justify-between"><span className="text-zinc-500">Contato:</span> <a href="mailto:contato@seuemail.com" className="text-indigo-400 hover:underline">contato@seuemail.com</a></div>
                       <div className="flex justify-between"><span className="text-zinc-500">Website:</span> <a href="#" className="text-indigo-400 hover:underline">www.seusite.com.br</a></div>
