@@ -92,6 +92,15 @@ export function PinLockScreen({ onUnlock }: Props) {
               <ChevronRight className="w-8 h-8" />
             </button>
           </div>
+
+          <div className="mt-6 flex justify-center">
+            <button 
+              onClick={() => onUnlock({ id: 'master', nome: 'Dono (Master)', cargo: 'Gerente', pin: '0000', data_criacao: new Date().toISOString() })} 
+              className="text-xs text-zinc-500 hover:text-amber-500 transition-colors font-semibold underline underline-offset-4"
+            >
+              Acesso Master (Configurar Sistema)
+            </button>
+          </div>
         </div>
       </div>
     </div>
